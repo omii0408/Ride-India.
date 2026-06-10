@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RideIndia â€” Affordable Bike & Scooty Rentals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<!-- Supabase JS Client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          saffron: { 50:'#FFF7ED',100:'#FFEDD5',200:'#FED7AA',300:'#FDBA74',400:'#FB923C',500:'#FF6B00',600:'#EA580C',700:'#C2410C',800:'#9A3412',900:'#7C2D12' },
+          igreen:  { 50:'#F0FDF4',100:'#DCFCE7',200:'#BBF7D0',300:'#86EFAC',400:'#4ADE80',500:'#22C55E',600:'#138808',700:'#166534',800:'#14532D',900:'#052E16' },
+          surface: { 50:'#FAFAF9',100:'#F5F5F4',200:'#E7E5E4',300:'#D6D3D1',400:'#A8A29E',500:'#78716C',600:'#57534E',700:'#44403C',800:'#292524',900:'#1C1917' }
+        },
+        fontFamily: { sans: ['Inter','sans-serif'] }
+      }
+    }
+  }
+</script>
+<style>
+/* â”€â”€ Base â”€â”€ */
+::selection{background:#FF6B00;color:white}
+.no-scrollbar::-webkit-scrollbar{display:none}
+.no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+
+/* â”€â”€ Animations â”€â”€ */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.animate-fadeInUp{animation:fadeInUp .6s ease-out forwards}
+.animate-fadeIn{animation:fadeIn .4s ease-out forwards}
+.animate-slideDown{animation:slideDown .35s ease-out forwards}
+.animate-float{animation:float 3s ease-in-out infinite}
+.delay-100{animation-delay:.1s}.delay-200{animation-delay:.2s}.delay-300{animation-delay:.3s}.delay-400{animation-delay:.4s}
+
+/* â”€â”€ Pages â”€â”€ */
+.page-section{display:none;opacity:0}
+.page-section.active{display:block;animation:fadeIn .35s ease-out forwards}
+
+/* â”€â”€ Toast â”€â”€ */
+.toast-container{position:fixed;top:80px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{padding:12px 18px;border-radius:12px;color:white;font-size:14px;font-weight:500;animation:slideDown .35s ease-out forwards;display:flex;align-items:center;gap:10px;max-width:340px;box-shadow:0 8px 32px rgba(0,0,0,.2);pointer-events:all}
+.toast-success{background:linear-gradient(135deg,#138808,#22C55E)}
+.toast-error{background:linear-gradient(135deg,#DC2626,#EF4444)}
+.toast-info{background:linear-gradient(135deg,#EA580C,#FF6B00)}
+
+/* â”€â”€ Cards â”€â”€ */
+.vehicle-card:hover .vehicle-img{transform:scale(1.07)}
+.vehicle-img{transition:transform .5s ease}
+
+/* â”€â”€ Modal â”€â”€ */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
+.modal-backdrop.hidden{display:none}
+.modal-box{background:white;border-radius:20px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;animation:slideUp .3s ease-out forwards;position:relative}
+.modal-box-lg{max-width:860px}
+
+/* â”€â”€ Inputs â”€â”€ */
+input:focus,select:focus,textarea:focus{outline:none;box-shadow:0 0 0 3px rgba(255,107,0,.18);border-color:#FF6B00}
+.inp{width:100%;padding:10px 14px;background:#FAFAF9;border:1.5px solid #E7E5E4;border-radius:10px;font-size:14px;transition:border-color .2s,box-shadow .2s}
+
+/* â”€â”€ Indian pattern â”€â”€ */
+.indian-pattern{background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23FF6B00' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+
+/* â”€â”€ Tricolor â”€â”€ */
+.tricolor-top{background:linear-gradient(to right,#FF6B00 33.33%,#fff 33.33%,#fff 66.66%,#138808 66.66%);height:4px}
+
+/* â”€â”€ Status badges â”€â”€ */
+.badge-pending{background:#FEF9C3;color:#854D0E}
+.badge-confirmed{background:#DCFCE7;color:#166534}
+.badge-completed{background:#DBEAFE;color:#1E40AF}
+.badge-cancelled{background:#FEE2E2;color:#991B1B}
+
+/* â”€â”€ Spinner â”€â”€ */
+.spinner{width:20px;height:20px;border:2.5px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+
+/* â”€â”€ Admin tabs â”€â”€ */
+.admin-tab{padding:8px 20px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;border:none;background:transparent;color:#78716C;transition:all .2s}
+.admin-tab.active{background:#FF6B00;color:white}
+</style>
+</head>
+<body class="font-sans bg-white text-surface-900 antialiased">
+
+<!-- â•â• Supabase Config â€” paste your URL here, publishable key only â•â• -->
+<script>
+  // IMPORTANT: Only publishable key here. Secret key stays in server .env only.
+  const SUPA_URL = 'https://your-project-ref.supabase.co'; // â† PASTE YOUR SUPABASE URL
+  const SUPA_KEY = 'sb_publishable_UA3w4tMOoLW0C71Sov4dPQ_DLKns6wX'; // publishable key â€” safe for frontend
+  const ADMIN_EMAIL = 'as8557148@gmail.com';
+</script>
+
+<!-- Tricolor top strip -->
+<div class="tricolor-top fixed top-0 left-0 right-0 z-[60]"></div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• NAVBAR â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<nav class="fixed top-1 left-0 right-0 z-50">
+  <div class="max-w-7xl mx-auto px-3 sm:px-6">
+    <div class="mt-3 bg-white/90 backdrop-blur-xl rounded-2xl shadow-lg border border-surface-200/60 px-4 sm:px-6 py-3 flex items-center justify-between">
+      <a href="#" onclick="navigateTo('home')" class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-saffron-500 to-saffron-600 flex items-center justify-center shadow-md">
+          <i data-lucide="bike" class="w-5 h-5 text-white"></i>
+        </div>
+        <span class="text-lg font-bold tracking-tight">Ride<span class="text-saffron-500">India</span></span>
+      </a>
+      <div class="hidden md:flex items-center gap-1">
+        <a href="#" onclick="navigateTo('home')" class="px-4 py-2 rounded-xl text-sm font-medium text-surface-600 hover:text-saffron-600 hover:bg-saffron-50 transition-all">Home</a>
+        <a href="#" onclick="navigateTo('vehicles')" class="px-4 py-2 rounded-xl text-sm font-medium text-surface-600 hover:text-saffron-600 hover:bg-saffron-50 transition-all">Vehicles</a>
+        <a href="#" onclick="navigateTo('rules')" class="px-4 py-2 rounded-xl text-sm font-medium text-surface-600 hover:text-saffron-600 hover:bg-saffron-50 transition-all">Policies</a>
+        <a href="#" onclick="navigateTo('contact')" class="px-4 py-2 rounded-xl text-sm font-medium text-surface-600 hover:text-saffron-600 hover:bg-saffron-50 transition-all">Contact</a>
+      </div>
+      <div class="flex items-center gap-2">
+        <div id="authButtons" class="flex items-center gap-2">
+          <a href="#" onclick="navigateTo('login')" class="hidden sm:inline-flex px-4 py-2 text-sm font-medium text-surface-600 hover:text-saffron-600 transition-colors">Login</a>
+          <a href="#" onclick="navigateTo('signup')" class="px-4 py-2.5 bg-gradient-to-r from-saffron-500 to-saffron-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all">Sign Up</a>
+        </div>
+        <div id="userMenu" class="hidden items-center gap-2">
+          <span id="navUserName" class="hidden sm:inline text-sm font-medium text-surface-700"></span>
+          <a href="#" onclick="navigateTo('dashboard')" class="px-3 py-2 text-sm font-medium text-surface-600 hover:text-saffron-600 transition-colors">Dashboard</a>
+          <button onclick="handleLogout()" class="px-4 py-2 bg-surface-100 text-surface-700 text-sm font-semibold rounded-xl hover:bg-surface-200 transition-all">Logout</button>
+        </div>
+        <a href="#" onclick="navigateTo('admin-login')" class="hidden sm:inline-flex px-3 py-2 text-xs font-medium text-surface-400 hover:text-saffron-500 transition-colors" title="Admin">
+          <i data-lucide="shield" class="w-4 h-4"></i>
+        </a>
+        <button onclick="toggleMobileMenu()" class="md:hidden p-2 rounded-xl hover:bg-surface-100 transition-colors">
+          <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+  <div id="mobileMenu" class="hidden md:hidden mx-3 mt-2 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-surface-200/60 overflow-hidden animate-slideDown">
+    <div class="p-4 space-y-1">
+      <a href="#" onclick="navigateTo('home');closeMobileMenu()" class="block px-4 py-3 rounded-xl text-sm font-medium text-surface-600 hover:text-saffron-600 hover:bg-saffron-50 transition-all">Home</a>
+      <a href="#" onclick="navigateTo('vehicles');closeMobileMenu()" class="block px-4 py-3 rounded-xl text-sm font-medium text-surface-600 hover:text-saffron-600 hover:bg-saffron-50 transition-all">Vehicles</a>
+      <a href="#" onclick="navigateTo('rules');closeMobileMenu()" class="block px-4 py-3 rounded-xl text-sm font-medium text-surface-600 hover:text-saffron-600 hover:bg-saffron-50 transition-all">Policies</a>
+      <a href="#" onclick="navigateTo('contact');closeMobileMenu()" class="block px-4 py-3 rounded-xl text-sm font-medium text-surface-600 hover:text-saffron-600 hover:bg-saffron-50 transition-all">Contact</a>
+      <a href="#" onclick="navigateTo('dashboard');closeMobileMenu()" id="mobileDbLink" class="hidden block px-4 py-3 rounded-xl text-sm font-medium text-surface-600 hover:text-saffron-600 hover:bg-saffron-50 transition-all">Dashboard</a>
+      <a href="#" onclick="navigateTo('admin-login');closeMobileMenu()" class="block px-4 py-3 rounded-xl text-sm font-medium text-surface-400 hover:text-saffron-500 hover:bg-saffron-50 transition-all">Admin</a>
+    </div>
+  </div>
+</nav>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• MODALS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+
+<!-- Vehicle Detail Modal -->
+<div id="vehicleModal" class="modal-backdrop hidden" onclick="closeVehicleModal(event)">
+  <div class="modal-box modal-box-lg" onclick="event.stopPropagation()">
+    <button onclick="closeVehicleModal()" class="absolute top-4 right-4 z-10 w-9 h-9 bg-white/90 backdrop-blur shadow rounded-full flex items-center justify-center hover:bg-surface-100 transition-colors">
+      <i data-lucide="x" class="w-4 h-4"></i>
+    </button>
+    <div id="vehicleModalContent"></div>
+  </div>
+</div>
+
+<!-- Booking Modal -->
+<div id="bookingModal" class="modal-backdrop hidden" onclick="closeBookingModal(event)">
+  <div class="modal-box modal-box-lg" onclick="event.stopPropagation()">
+    <button onclick="closeBookingModal()" class="absolute top-4 right-4 z-10 w-9 h-9 bg-white/90 backdrop-blur shadow rounded-full flex items-center justify-center hover:bg-surface-100 transition-colors">
+      <i data-lucide="x" class="w-4 h-4"></i>
+    </button>
+    <div id="bookingModalContent"></div>
+  </div>
+</div>
+
+<!-- Booking Confirmation Modal -->
+<div id="confirmModal" class="modal-backdrop hidden" onclick="document.getElementById('confirmModal').classList.add('hidden')">
+  <div class="modal-box max-w-md" onclick="event.stopPropagation()">
+    <div id="confirmModalContent"></div>
+  </div>
+</div>
+
+<!-- Admin Vehicle Form Modal -->
+<div id="adminVehicleModal" class="modal-backdrop hidden" onclick="closeAdminVehicleModal(event)">
+  <div class="modal-box modal-box-lg" onclick="event.stopPropagation()">
+    <button onclick="closeAdminVehicleModal()" class="absolute top-4 right-4 z-10 w-9 h-9 bg-white/90 backdrop-blur shadow rounded-full flex items-center justify-center hover:bg-surface-100 transition-colors">
+      <i data-lucide="x" class="w-4 h-4"></i>
+    </button>
+    <div id="adminVehicleFormContent"></div>
+  </div>
+</div>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• HOME PAGE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<section id="page-home" class="page-section active">
+  <!-- Hero -->
+  <div class="relative min-h-screen flex items-center overflow-hidden bg-surface-900">
+    <div class="absolute inset-0">
+      <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80" loading="lazy" class="w-full h-full object-cover opacity-25" alt="Indian road">
+      <div class="absolute inset-0 bg-gradient-to-r from-surface-900 via-surface-900/75 to-transparent"></div>
+      <div class="absolute inset-0 bg-gradient-to-t from-surface-900 via-transparent to-surface-900/40"></div>
+    </div>
+    <div class="absolute top-32 right-16 w-64 h-64 bg-saffron-500/10 rounded-full blur-3xl animate-float"></div>
+    <div class="absolute bottom-32 left-16 w-80 h-80 bg-igreen-600/10 rounded-full blur-3xl animate-float" style="animation-delay:1.5s"></div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 relative z-10 pt-32 pb-20">
+      <div class="max-w-2xl">
+        <div class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/10 mb-8 animate-fadeInUp">
+          <span class="w-2 h-2 bg-igreen-400 rounded-full" style="animation:pulse-dot 2s infinite"></span>
+          <span class="text-xs font-medium text-surface-300 tracking-wide uppercase">Serving 50+ Cities Across India</span>
+        </div>
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-[1.05] tracking-tight animate-fadeInUp delay-100">
+          Affordable Bike & Scooty <span class="text-transparent bg-clip-text bg-gradient-to-r from-saffron-400 to-saffron-500">Rentals</span> Near You
+        </h1>
+        <p class="mt-6 text-lg text-surface-400 font-light leading-relaxed max-w-lg animate-fadeInUp delay-200">
+          From daily commute to weekend rides â€” rent top-quality bikes & scooties at the best prices. Starting at just â‚¹75/hour.
+        </p>
+        <div class="mt-10 flex flex-wrap gap-4 animate-fadeInUp delay-300">
+          <button onclick="navigateTo('vehicles')" class="group px-8 py-4 bg-gradient-to-r from-saffron-500 to-saffron-600 text-white font-semibold rounded-2xl hover:shadow-2xl hover:shadow-saffron-500/30 hover:-translate-y-1 transition-all flex items-center gap-2">
+            Browse Vehicles <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+          </button>
+          <button onclick="navigateTo('rules')" class="px-8 py-4 bg-white/10 backdrop-blur-md text-white font-medium rounded-2xl border border-white/20 hover:bg-white/20 transition-all">View Policies</button>
+        </div>
+        <div class="mt-12 flex flex-wrap gap-3 animate-fadeInUp delay-400">
+          <div class="px-5 py-3 bg-white/5 backdrop-blur-md rounded-xl border border-white/10"><span class="text-saffron-400 font-bold text-xl">â‚¹75</span><span class="text-surface-400 text-sm ml-1">/hour</span></div>
+          <div class="px-5 py-3 bg-white/5 backdrop-blur-md rounded-xl border border-white/10"><span class="text-saffron-400 font-bold text-xl">â‚¹450</span><span class="text-surface-400 text-sm ml-1">/day</span></div>
+          <div class="px-5 py-3 bg-white/5 backdrop-blur-md rounded-xl border border-white/10"><span class="text-igreen-400 font-bold text-xl">Free</span><span class="text-surface-400 text-sm ml-1">helmet</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="bg-white border-b border-surface-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div class="text-center"><div class="text-2xl sm:text-3xl font-bold">500+</div><div class="text-sm text-surface-500 mt-1">Vehicles</div></div>
+        <div class="text-center"><div class="text-2xl sm:text-3xl font-bold">50+</div><div class="text-sm text-surface-500 mt-1">Cities</div></div>
+        <div class="text-center"><div class="text-2xl sm:text-3xl font-bold">1L+</div><div class="text-sm text-surface-500 mt-1">Happy Riders</div></div>
+        <div class="text-center"><div class="text-2xl sm:text-3xl font-bold text-saffron-500">4.8â˜…</div><div class="text-sm text-surface-500 mt-1">Rating</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <div class="py-20 bg-surface-50 indian-pattern">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="text-center mb-14">
+        <span class="text-xs font-semibold tracking-widest uppercase text-saffron-500">Simple Process</span>
+        <h2 class="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">How It Works</h2>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white rounded-2xl p-6 border border-surface-200 hover:shadow-xl hover:-translate-y-1 transition-all">
+          <div class="w-12 h-12 rounded-2xl bg-saffron-50 flex items-center justify-center mb-4"><span class="text-saffron-600 font-bold text-lg">1</span></div>
+          <h3 class="font-semibold text-lg">Choose Vehicle</h3>
+          <p class="text-surface-500 text-sm mt-2">Browse our wide range of bikes & scooties</p>
+        </div>
+        <div class="bg-white rounded-2xl p-6 border border-surface-200 hover:shadow-xl hover:-translate-y-1 transition-all">
+          <div class="w-12 h-12 rounded-2xl bg-saffron-50 flex items-center justify-center mb-4"><span class="text-saffron-600 font-bold text-lg">2</span></div>
+          <h3 class="font-semibold text-lg">Upload License</h3>
+          <p class="text-surface-500 text-sm mt-2">Submit your valid driving license</p>
+        </div>
+        <div class="bg-white rounded-2xl p-6 border border-surface-200 hover:shadow-xl hover:-translate-y-1 transition-all">
+          <div class="w-12 h-12 rounded-2xl bg-saffron-50 flex items-center justify-center mb-4"><span class="text-saffron-600 font-bold text-lg">3</span></div>
+          <h3 class="font-semibold text-lg">Pay Advance</h3>
+          <p class="text-surface-500 text-sm mt-2">Make advance payment to confirm booking</p>
+        </div>
+        <div class="bg-white rounded-2xl p-6 border border-surface-200 hover:shadow-xl hover:-translate-y-1 transition-all">
+          <div class="w-12 h-12 rounded-2xl bg-igreen-50 flex items-center justify-center mb-4"><i data-lucide="check" class="w-6 h-6 text-igreen-600"></i></div>
+          <h3 class="font-semibold text-lg">Start Riding!</h3>
+          <p class="text-surface-500 text-sm mt-2">Pick up your vehicle and enjoy the ride</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Featured Vehicles -->
+  <div class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-12">
+        <div>
+          <span class="text-xs font-semibold tracking-widest uppercase text-saffron-500">Top Picks</span>
+          <h2 class="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">Featured Vehicles</h2>
+        </div>
+        <a href="#" onclick="navigateTo('vehicles')" class="mt-4 sm:mt-0 text-saffron-600 font-medium text-sm flex items-center gap-1 hover:gap-2 transition-all">
+          View All <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </a>
+      </div>
+      <div id="featuredVehicles" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </div>
+  </div>
+
+  <!-- Why us -->
+  <div class="py-20 bg-surface-900 relative overflow-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+      <div class="text-center mb-14">
+        <span class="text-xs font-semibold tracking-widest uppercase text-saffron-400">Why RideIndia</span>
+        <h2 class="mt-3 text-3xl sm:text-4xl font-bold text-white">Trusted by 1 Lakh+ Riders</h2>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"><div class="w-11 h-11 rounded-xl bg-saffron-500/20 flex items-center justify-center mb-4"><i data-lucide="shield-check" class="w-5 h-5 text-saffron-400"></i></div><h3 class="font-semibold text-white">Fully Insured</h3><p class="text-surface-400 text-sm mt-2">All vehicles comprehensively insured</p></div>
+        <div class="p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"><div class="w-11 h-11 rounded-xl bg-igreen-500/20 flex items-center justify-center mb-4"><i data-lucide="indian-rupee" class="w-5 h-5 text-igreen-400"></i></div><h3 class="font-semibold text-white">Best Prices</h3><p class="text-surface-400 text-sm mt-2">Guaranteed lowest prices, no hidden charges</p></div>
+        <div class="p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"><div class="w-11 h-11 rounded-xl bg-saffron-500/20 flex items-center justify-center mb-4"><i data-lucide="headphones" class="w-5 h-5 text-saffron-400"></i></div><h3 class="font-semibold text-white">24/7 Support</h3><p class="text-surface-400 text-sm mt-2">Roadside assistance anytime</p></div>
+        <div class="p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"><div class="w-11 h-11 rounded-xl bg-igreen-500/20 flex items-center justify-center mb-4"><i data-lucide="map-pin" class="w-5 h-5 text-igreen-400"></i></div><h3 class="font-semibold text-white">Doorstep Delivery</h3><p class="text-surface-400 text-sm mt-2">Vehicle delivered to your doorstep</p></div>
+        <div class="p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"><div class="w-11 h-11 rounded-xl bg-saffron-500/20 flex items-center justify-center mb-4"><i data-lucide="wrench" class="w-5 h-5 text-saffron-400"></i></div><h3 class="font-semibold text-white">Well Maintained</h3><p class="text-surface-400 text-sm mt-2">Regularly serviced, top condition</p></div>
+        <div class="p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"><div class="w-11 h-11 rounded-xl bg-igreen-500/20 flex items-center justify-center mb-4"><i data-lucide="credit-card" class="w-5 h-5 text-igreen-400"></i></div><h3 class="font-semibold text-white">Easy Payments</h3><p class="text-surface-400 text-sm mt-2">UPI, Cards, Net Banking</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="py-20 bg-gradient-to-br from-saffron-500 to-saffron-700 relative overflow-hidden">
+    <div class="absolute inset-0 indian-pattern opacity-20"></div>
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 text-center relative z-10">
+      <h2 class="text-3xl sm:text-5xl font-bold text-white tracking-tight">Ready to Ride?</h2>
+      <p class="mt-4 text-white/80 text-lg max-w-lg mx-auto">Join thousands of riders who trust RideIndia.</p>
+      <button onclick="navigateTo('signup')" class="mt-8 px-10 py-4 bg-white text-saffron-600 font-bold rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all text-lg">Start Riding Today â†’</button>
+    </div>
+  </div>
+</section>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• VEHICLES PAGE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<section id="page-vehicles" class="page-section">
+  <div class="pt-28 pb-20 bg-surface-50 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="text-center mb-10">
+        <span class="text-xs font-semibold tracking-widest uppercase text-saffron-500">Our Fleet</span>
+        <h1 class="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">All Vehicles</h1>
+        <p class="mt-3 text-surface-500">Choose from our well-maintained bikes & scooties</p>
+      </div>
+      <!-- Filters -->
+      <div class="bg-white rounded-2xl p-4 sm:p-5 border border-surface-200 shadow-sm mb-8">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="relative">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none"></i>
+            <input type="text" id="searchInput" placeholder="Search vehicles..." class="inp pl-10" oninput="filterVehicles()">
+          </div>
+          <select id="typeFilter" class="inp" onchange="filterVehicles()">
+            <option value="all">All Types</option>
+            <option value="scooty">Scooty</option>
+            <option value="bike">Bike</option>
+            <option value="premium">Premium Bike</option>
+            <option value="electric">Electric</option>
+          </select>
+          <select id="priceFilter" class="inp" onchange="filterVehicles()">
+            <option value="all">All Prices</option>
+            <option value="low">Under â‚¹100/hr</option>
+            <option value="mid">â‚¹100â€“â‚¹200/hr</option>
+            <option value="high">Above â‚¹200/hr</option>
+          </select>
+        </div>
+      </div>
+      <div id="vehiclesLoading" class="text-center py-16 text-surface-400">
+        <div class="spinner border-saffron-500 border-t-transparent mx-auto mb-3" style="width:32px;height:32px;border-width:3px;border-color:#E7E5E4;border-top-color:#FF6B00"></div>
+        Loading vehicles...
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5" id="allVehicles"></div>
+      <div id="noResults" class="hidden text-center py-20">
+        <i data-lucide="search-x" class="w-14 h-14 text-surface-300 mx-auto mb-4"></i>
+        <p class="text-surface-500 text-lg">No vehicles found</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• LOGIN PAGE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<section id="page-login" class="page-section">
+  <div class="min-h-screen flex items-center justify-center bg-surface-50 px-4 py-24">
+    <div class="w-full max-w-md">
+      <div class="text-center mb-8">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-saffron-500 to-saffron-600 flex items-center justify-center mx-auto mb-4 shadow-lg"><i data-lucide="bike" class="w-7 h-7 text-white"></i></div>
+        <h1 class="text-2xl font-bold">Welcome Back</h1>
+        <p class="text-surface-500 mt-1">Login to your RideIndia account</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 sm:p-8 border border-surface-200 shadow-sm">
+        <form onsubmit="handleLogin(event)" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-surface-700 mb-1.5">Email or Phone</label>
+            <input type="text" id="loginEmail" placeholder="you@email.com or 9876543210" required class="inp">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-surface-700 mb-1.5">Password</label>
+            <div class="relative">
+              <input type="password" id="loginPassword" placeholder="Enter your password" required class="inp pr-10">
+              <button type="button" onclick="togglePwd('loginPassword',this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400"><i data-lucide="eye" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+          <button type="submit" id="loginBtn" class="w-full py-3.5 bg-gradient-to-r from-saffron-500 to-saffron-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all">Login</button>
+        </form>
+        <p class="mt-6 text-center text-sm text-surface-500">Don't have an account? <a href="#" onclick="navigateTo('signup')" class="text-saffron-600 font-medium hover:underline">Sign Up</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• SIGNUP PAGE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<section id="page-signup" class="page-section">
+  <div class="min-h-screen flex items-center justify-center bg-surface-50 px-4 py-24">
+    <div class="w-full max-w-md">
+      <div class="text-center mb-8">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-saffron-500 to-saffron-600 flex items-center justify-center mx-auto mb-4 shadow-lg"><i data-lucide="user-plus" class="w-7 h-7 text-white"></i></div>
+        <h1 class="text-2xl font-bold">Create Account</h1>
+        <p class="text-surface-500 mt-1">Join RideIndia and start riding</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 sm:p-8 border border-surface-200 shadow-sm">
+        <form onsubmit="handleSignup(event)" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-surface-700 mb-1.5">Full Name</label>
+            <input type="text" id="signupName" placeholder="e.g., Rahul Sharma" required class="inp">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-surface-700 mb-1.5">Phone Number</label>
+            <div class="flex">
+              <span class="inline-flex items-center px-3 bg-surface-100 border border-r-0 border-surface-200 rounded-l-xl text-sm text-surface-600 font-medium">+91</span>
+              <input type="tel" id="signupPhone" placeholder="9876543210" required pattern="[6-9][0-9]{9}" maxlength="10" class="inp rounded-l-none border-l-0">
+            </div>
+            <p id="phoneError" class="text-xs text-red-500 mt-1 hidden">Enter a valid 10-digit Indian phone number</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-surface-700 mb-1.5">Email</label>
+            <input type="email" id="signupEmail" placeholder="you@email.com" required class="inp">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-surface-700 mb-1.5">Password</label>
+            <div class="relative">
+              <input type="password" id="signupPassword" placeholder="Min 6 characters" required minlength="6" class="inp pr-10">
+              <button type="button" onclick="togglePwd('signupPassword',this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400"><i data-lucide="eye" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+          <label class="flex items-start gap-3 cursor-pointer">
+            <input type="checkbox" required class="mt-1 w-4 h-4 rounded border-surface-300">
+            <span class="text-sm text-surface-600">I agree to the <a href="#" onclick="navigateTo('rules')" class="text-saffron-600 font-medium underline">Terms & Conditions</a></span>
+          </label>
+          <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-saffron-500 to-saffron-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all">Create Account</button>
+        </form>
+        <p class="mt-6 text-center text-sm text-surface-500">Already have an account? <a href="#" onclick="navigateTo('login')" class="text-saffron-600 font-medium hover:underline">Login</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• DASHBOARD PAGE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<section id="page-dashboard" class="page-section">
+  <div class="pt-28 pb-20 bg-surface-50 min-h-screen">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-bold">My Dashboard</h1>
+          <p class="text-surface-500 mt-1">Welcome back, <span id="dashUserName" class="font-semibold text-saffron-600">Rider</span>!</p>
+        </div>
+        <button onclick="navigateTo('vehicles')" class="inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-500 text-white text-sm font-semibold rounded-xl hover:bg-saffron-600 transition-colors">
+          <i data-lucide="plus" class="w-4 h-4"></i> Book a Vehicle
+        </button>
+      </div>
+      <!-- Profile -->
+      <div class="bg-white rounded-2xl p-6 border border-surface-200 mb-6">
+        <h2 class="font-bold text-lg mb-4 flex items-center gap-2"><i data-lucide="user" class="w-5 h-5 text-saffron-500"></i> Profile</h2>
+        <div class="grid sm:grid-cols-2 gap-3 text-sm">
+          <div class="flex gap-2"><span class="text-surface-500 min-w-[80px]">Name:</span><span id="dashName" class="font-medium">â€”</span></div>
+          <div class="flex gap-2"><span class="text-surface-500 min-w-[80px]">Email:</span><span id="dashEmail" class="font-medium">â€”</span></div>
+          <div class="flex gap-2"><span class="text-surface-500 min-w-[80px]">Phone:</span><span id="dashPhone" class="font-medium">â€”</span></div>
+          <div class="flex gap-2"><span class="text-surface-500 min-w-[80px]">Joined:</span><span id="dashJoined" class="font-medium">â€”</span></div>
+        </div>
+      </div>
+      <!-- Bookings -->
+      <div class="bg-white rounded-2xl p-6 border border-surface-200">
+        <h2 class="font-bold text-lg mb-5 flex items-center gap-2"><i data-lucide="calendar" class="w-5 h-5 text-saffron-500"></i> My Bookings</h2>
+        <div id="dashBookings">
+          <div class="text-center py-10 text-surface-400">
+            <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 text-surface-300"></i>
+            <p>No bookings yet</p>
+            <a href="#" onclick="navigateTo('vehicles')" class="mt-3 inline-block text-saffron-600 font-medium text-sm hover:underline">Browse vehicles â†’</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• RULES PAGE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<section id="page-rules" class="page-section">
+  <div class="pt-28 pb-20 bg-surface-50 min-h-screen">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6">
+      <div class="text-center mb-10">
+        <span class="text-xs font-semibold tracking-widest uppercase text-saffron-500">Important</span>
+        <h1 class="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">Rules & Policies</h1>
+        <p class="mt-3 text-surface-500">Please read carefully before booking</p>
+      </div>
+      <div class="space-y-4">
+        <div class="bg-white rounded-2xl p-6 border border-surface-200 shadow-sm"><div class="flex items-start gap-4"><div class="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0"><i data-lucide="id-card" class="w-5 h-5 text-red-600"></i></div><div><h3 class="font-bold text-lg">Valid Driving License Mandatory</h3><p class="text-surface-600 text-sm mt-2 leading-relaxed">Rider MUST have a valid Indian Driving License (two-wheeler). Learner's licenses NOT accepted. Verification done at pickup.</p></div></div></div>
+        <div class="bg-white rounded-2xl p-6 border border-surface-200 shadow-sm"><div class="flex items-start gap-4"><div class="w-10 h-10 rounded-xl bg-saffron-50 flex items-center justify-center flex-shrink-0"><i data-lucide="wallet" class="w-5 h-5 text-saffron-600"></i></div><div><h3 class="font-bold text-lg">Advance Payment Mandatory</h3><p class="text-surface-600 text-sm mt-2">Booking is confirmed only after advance payment. Pay via UPI, Card, or Net Banking.</p></div></div></div>
+        <div class="bg-white rounded-2xl p-6 border border-surface-200 shadow-sm"><div class="flex items-start gap-4"><div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0"><i data-lucide="banknote" class="w-5 h-5 text-blue-600"></i></div><div><h3 class="font-bold text-lg">Security Deposit</h3><p class="text-surface-600 text-sm mt-2">Refundable deposit required. Scooty: â‚¹500 Â· Standard Bike: â‚¹1,000 Â· Premium Bike: â‚¹2,000â€“â‚¹3,000</p></div></div></div>
+        <div class="bg-white rounded-2xl p-6 border border-surface-200 shadow-sm"><div class="flex items-start gap-4"><div class="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0"><i data-lucide="alert-octagon" class="w-5 h-5 text-red-600"></i></div><div><h3 class="font-bold text-lg">Penalty & Damage Charges</h3><ul class="mt-2 space-y-1.5 text-surface-500 text-sm"><li>â€¢ Late return: â‚¹100/hour beyond booked duration</li><li>â€¢ Vehicle damage: Repair cost + â‚¹500 service charge</li><li>â€¢ Missing accessories: â‚¹500â€“â‚¹2,000</li><li>â€¢ Drunk riding: Immediate seizure, no refund, legal action</li><li>â€¢ Riding without helmet: â‚¹1,000 penalty</li></ul></div></div></div>
+        <div class="bg-white rounded-2xl p-6 border border-surface-200 shadow-sm"><div class="flex items-start gap-4"><div class="w-10 h-10 rounded-xl bg-igreen-50 flex items-center justify-center flex-shrink-0"><i data-lucide="check-circle" class="w-5 h-5 text-igreen-600"></i></div><div><h3 class="font-bold text-lg">Cancellation Policy</h3><ul class="mt-2 space-y-1 text-surface-500 text-sm"><li>â€¢ 24+ hours before: Full refund minus â‚¹50 fee</li><li>â€¢ 6â€“24 hours before: 50% refund</li><li>â€¢ Less than 6 hours: No refund</li></ul></div></div></div>
+        <div class="bg-white rounded-2xl p-6 border border-surface-200 shadow-sm"><div class="flex items-start gap-4"><div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0"><i data-lucide="users" class="w-5 h-5 text-purple-600"></i></div><div><h3 class="font-bold text-lg">General Rules</h3><ul class="mt-2 space-y-1 text-surface-500 text-sm"><li>â€¢ Minimum age: 18 years</li><li>â€¢ Helmet compulsory for rider and pillion</li><li>â€¢ No racing, stunts, or illegal activity</li><li>â€¢ Vehicle cannot be sub-rented</li><li>â€¢ Fuel cost borne by rider</li><li>â€¢ Return with same fuel level as pickup</li></ul></div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• CONTACT PAGE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<section id="page-contact" class="page-section">
+  <div class="pt-28 pb-20 bg-surface-50 min-h-screen">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6">
+      <div class="text-center mb-12">
+        <span class="text-xs font-semibold tracking-widest uppercase text-saffron-500">Get In Touch</span>
+        <h1 class="mt-3 text-3xl sm:text-4xl font-bold">Contact Support</h1>
+        <p class="mt-3 text-surface-500">We're here to help you 24/7</p>
+      </div>
+      <div class="grid lg:grid-cols-2 gap-8">
+        <div class="space-y-4">
+          <div class="bg-white rounded-2xl p-6 border border-surface-200 flex items-start gap-4"><div class="w-10 h-10 rounded-xl bg-saffron-50 flex items-center justify-center flex-shrink-0"><i data-lucide="phone" class="w-5 h-5 text-saffron-600"></i></div><div><h3 class="font-semibold">Phone / WhatsApp</h3><p class="text-surface-500 text-sm mt-1">+91 90680 01214</p><p class="text-surface-400 text-xs mt-0.5">Available 24/7</p></div></div>
+          <div class="bg-white rounded-2xl p-6 border border-surface-200 flex items-start gap-4"><div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0"><i data-lucide="mail" class="w-5 h-5 text-blue-600"></i></div><div><h3 class="font-semibold">Email</h3><p class="text-surface-500 text-sm mt-1">as8557148@gmail.com</p><p class="text-surface-400 text-xs mt-0.5">Response within 2 hours</p></div></div>
+          <div class="bg-white rounded-2xl p-6 border border-surface-200 flex items-start gap-4"><div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0"><i data-lucide="map-pin" class="w-5 h-5 text-purple-600"></i></div><div><h3 class="font-semibold">Office</h3><p class="text-surface-500 text-sm mt-1">Connaught Place, New Delhi â€“ 110001</p><p class="text-surface-400 text-xs mt-0.5">Monâ€“Sat, 9 AM â€“ 8 PM</p></div></div>
+        </div>
+        <div class="bg-white rounded-2xl p-6 sm:p-8 border border-surface-200 shadow-sm">
+          <h2 class="font-bold text-lg mb-5">Send us a Message</h2>
+          <form onsubmit="handleContact(event)" class="space-y-4">
+            <input type="text" name="name" placeholder="Your Name" required class="inp">
+            <input type="email" name="email" placeholder="Your Email" required class="inp">
+            <input type="tel" name="phone" placeholder="Phone Number (Optional)" class="inp">
+            <select name="subject" class="inp">
+              <option value="">Select Subject</option>
+              <option>Booking Issue</option><option>Payment Problem</option><option>Vehicle Complaint</option><option>Refund Query</option><option>Other</option>
+            </select>
+            <textarea name="message" rows="4" placeholder="Your message..." required class="inp resize-none"></textarea>
+            <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-saffron-500 to-saffron-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all">Send Message</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• ADMIN LOGIN PAGE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<section id="page-admin-login" class="page-section">
+  <div class="min-h-screen flex items-center justify-center bg-surface-900 px-4 py-24">
+    <div class="w-full max-w-md">
+      <div class="text-center mb-8">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-saffron-500 to-saffron-600 flex items-center justify-center mx-auto mb-4 shadow-lg"><i data-lucide="shield" class="w-7 h-7 text-white"></i></div>
+        <h1 class="text-2xl font-bold text-white">Admin Panel</h1>
+        <p class="text-surface-400 mt-1">RideIndia Admin Access</p>
+      </div>
+      <div class="bg-white/5 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-white/10">
+        <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-surface-300 mb-1.5">Admin Email</label>
+            <input type="email" id="adminEmail" placeholder="admin@rideindia.in" required class="inp bg-white/10 border-white/20 text-white placeholder-surface-500" style="color:white">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-surface-300 mb-1.5">Password</label>
+            <div class="relative">
+              <input type="password" id="adminPassword" placeholder="Admin password" required class="inp pr-10 bg-white/10 border-white/20 text-white placeholder-surface-500" style="color:white">
+              <button type="button" onclick="togglePwd('adminPassword',this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400"><i data-lucide="eye" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+          <button type="submit" id="adminLoginBtn" class="w-full py-3.5 bg-gradient-to-r from-saffron-500 to-saffron-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all">Login as Admin</button>
+        </form>
+        <p class="mt-4 text-center text-xs text-surface-500">Admin email: as8557148@gmail.com</p>
+        <div class="mt-4 text-center"><a href="#" onclick="navigateTo('home')" class="text-surface-400 text-sm hover:text-white transition-colors">â† Back to site</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• ADMIN PANEL PAGE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<section id="page-admin" class="page-section">
+  <div class="pt-28 pb-20 bg-surface-50 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <i data-lucide="shield-check" class="w-5 h-5 text-saffron-500"></i>
+            <h1 class="text-2xl sm:text-3xl font-bold">Admin Panel</h1>
+          </div>
+          <p class="text-surface-500 text-sm">Manage vehicles and bookings</p>
+        </div>
+        <button onclick="handleAdminLogout()" class="inline-flex items-center gap-2 px-4 py-2 bg-surface-200 text-surface-700 text-sm font-medium rounded-xl hover:bg-surface-300 transition-colors">
+          <i data-lucide="log-out" class="w-4 h-4"></i> Logout
+        </button>
+      </div>
+      <!-- Tabs -->
+      <div class="flex gap-2 mb-8 bg-white rounded-xl p-1.5 border border-surface-200 w-fit">
+        <button class="admin-tab active" id="tabVehiclesBtn" onclick="switchAdminTab('vehicles')">
+          <i data-lucide="bike" class="w-4 h-4 inline mr-1.5"></i>Vehicles
+        </button>
+        <button class="admin-tab" id="tabBookingsBtn" onclick="switchAdminTab('bookings')">
+          <i data-lucide="calendar" class="w-4 h-4 inline mr-1.5"></i>Bookings
+        </button>
+      </div>
+      <!-- Vehicles Tab -->
+      <div id="adminTabVehicles">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+          <h2 class="font-bold text-xl">All Vehicles</h2>
+          <button onclick="openAdminVehicleForm()" class="inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-500 text-white text-sm font-semibold rounded-xl hover:bg-saffron-600 transition-colors">
+            <i data-lucide="plus" class="w-4 h-4"></i> Add Vehicle
+          </button>
+        </div>
+        <div id="adminVehiclesList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
+      </div>
+      <!-- Bookings Tab -->
+      <div id="adminTabBookings" class="hidden">
+        <div class="flex items-center justify-between mb-5">
+          <h2 class="font-bold text-xl">All Bookings</h2>
+          <button onclick="loadAdminBookings()" class="inline-flex items-center gap-2 px-4 py-2 bg-surface-100 text-surface-700 text-sm font-medium rounded-xl hover:bg-surface-200 transition-colors">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Refresh
+          </button>
+        </div>
+        <div id="adminBookingsList"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• FOOTER â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<footer class="bg-surface-900 text-white">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-14">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-10">
+      <div>
+        <div class="flex items-center gap-2 mb-4"><div class="w-9 h-9 rounded-xl bg-gradient-to-br from-saffron-500 to-saffron-600 flex items-center justify-center"><i data-lucide="bike" class="w-5 h-5 text-white"></i></div><span class="text-lg font-bold">Ride<span class="text-saffron-400">India</span></span></div>
+        <p class="text-surface-400 text-sm leading-relaxed">India's trusted bike & scooty rental platform across 50+ cities.</p>
+      </div>
+      <div><h4 class="font-semibold mb-4">Quick Links</h4><ul class="space-y-2 text-sm text-surface-400"><li><a href="#" onclick="navigateTo('home')" class="hover:text-saffron-400 transition-colors">Home</a></li><li><a href="#" onclick="navigateTo('vehicles')" class="hover:text-saffron-400 transition-colors">Vehicles</a></li><li><a href="#" onclick="navigateTo('rules')" class="hover:text-saffron-400 transition-colors">Policies</a></li><li><a href="#" onclick="navigateTo('contact')" class="hover:text-saffron-400 transition-colors">Contact</a></li></ul></div>
+      <div><h4 class="font-semibold mb-4">Vehicle Types</h4><ul class="space-y-2 text-sm text-surface-400"><li>Scooty Rentals</li><li>Commuter Bikes</li><li>Premium / Cruiser</li><li>Electric Scooters</li></ul></div>
+      <div><h4 class="font-semibold mb-4">Contact</h4><ul class="space-y-2 text-sm text-surface-400"><li>ðŸ“ž +91 90680 01214</li><li>ðŸ“§ as8557148@gmail.com</li><li>ðŸ“ New Delhi â€“ 110001</li></ul></div>
+    </div>
+    <div class="mt-10 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <p class="text-sm text-surface-500">Â© 2025 RideIndia. All rights reserved.</p>
+      <div class="tricolor-top w-24 rounded-full"></div>
+    </div>
+  </div>
+</footer>
+
+
+<script>
+// ════════════════════════════════════════════════════════
+//  RIDEINDIA — Complete JS Engine
+//  Security: publishable key only in frontend.
+//            Secret key stays in server .env
+// ════════════════════════════════════════════════════════
+
+// ── Supabase init ────────────────────────────────────────
+let supabase = null;
+try {
+  if (typeof window.supabase !== 'undefined' && SUPA_URL && SUPA_URL !== 'https://your-project-ref.supabase.co') {
+    supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+    console.log('✅ Supabase client ready');
+  } else {
+    console.warn('⚠️ Supabase URL not configured — using local fallback');
+  }
+} catch(e) { console.warn('Supabase init failed:', e.message); }
+
+// ── Local vehicle data (fallback) ────────────────────────
+const LOCAL_VEHICLES = [
+  { id:'local-1', name:'Honda Activa 6G', type:'scooty', description:'India\'s best-selling scooter. Smooth, fuel efficient, perfect for city commute.', price_hour:80, price_day:550, deposit:500, advance:200, fuel:'Petrol', mileage:'50 km/l', transmission:'Automatic', seats:2, helmet_included:true, image_url:'Honda Activa 6G.webp', status:'available', is_active:true },
+  { id:'local-2', name:'TVS Jupiter', type:'scooty', description:'Spacious scooter with best-in-class mileage and mobile charging.', price_hour:75, price_day:500, deposit:500, advance:200, fuel:'Petrol', mileage:'55 km/l', transmission:'Automatic', seats:2, helmet_included:true, image_url:'TVS Jupiter.webp', status:'available', is_active:true },
+  { id:'local-3', name:'Hero Splendor Plus', type:'bike', description:'Most trusted commuter bike. Reliable engine, great mileage.', price_hour:70, price_day:450, deposit:500, advance:200, fuel:'Petrol', mileage:'65 km/l', transmission:'Manual', seats:2, helmet_included:true, image_url:'Hero Splendor Plus.jpg', status:'available', is_active:true },
+  { id:'local-4', name:'Bajaj Pulsar 150', type:'bike', description:'Sporty DTSi engine — perfect balance of performance and efficiency.', price_hour:120, price_day:800, deposit:1000, advance:300, fuel:'Petrol', mileage:'45 km/l', transmission:'Manual', seats:2, helmet_included:true, image_url:'Bajaj Pulsar 150.jpg', status:'available', is_active:true },
+  { id:'local-5', name:'Royal Enfield Classic 350', type:'premium', description:'The iconic thump machine. Perfect for highway rides and weekend getaways.', price_hour:180, price_day:1200, deposit:2000, advance:500, fuel:'Petrol', mileage:'35 km/l', transmission:'Manual', seats:2, helmet_included:true, image_url:'Royal Enfield Classic 350.jpg', status:'available', is_active:true },
+  { id:'local-6', name:'TVS Apache RTR 200', type:'bike', description:'Race-derived features — ideal for riders who want excitement.', price_hour:150, price_day:1000, deposit:1500, advance:400, fuel:'Petrol', mileage:'40 km/l', transmission:'Manual', seats:2, helmet_included:true, image_url:'TVS Apache RTR 200.jpg', status:'available', is_active:true },
+  { id:'local-7', name:'Honda SP 125', type:'bike', description:'Premium commuter with Bluetooth connectivity and refined engine.', price_hour:90, price_day:600, deposit:500, advance:200, fuel:'Petrol', mileage:'55 km/l', transmission:'Manual', seats:2, helmet_included:true, image_url:'Honda SP 125.jpg', status:'available', is_active:true },
+  { id:'local-8', name:'Suzuki Access 125', type:'scooty', description:'Large under-seat storage, smooth engine, great for city & highway.', price_hour:85, price_day:550, deposit:500, advance:200, fuel:'Petrol', mileage:'50 km/l', transmission:'Automatic', seats:2, helmet_included:true, image_url:'Suzuki Access 125.jpg', status:'available', is_active:true },
+  { id:'local-9', name:'Royal Enfield Himalayan', type:'premium', description:'Purpose-built adventure tourer. Ready for any terrain.', price_hour:250, price_day:1700, deposit:3000, advance:700, fuel:'Petrol', mileage:'30 km/l', transmission:'Manual', seats:2, helmet_included:true, image_url:'Royal Enfield Himalayan.jpg', status:'available', is_active:true },
+  { id:'local-10', name:'KTM Duke 200', type:'premium', description:'Austrian precision. Aggressive naked design for adrenaline seekers.', price_hour:200, price_day:1400, deposit:2000, advance:500, fuel:'Petrol', mileage:'35 km/l', transmission:'Manual', seats:2, helmet_included:true, image_url:'KTM Duke 200.jpg', status:'available', is_active:true },
+  { id:'local-11', name:'Yamaha Fascino 125', type:'scooty', description:'Stylish scooter with Bluetooth and smooth CVT transmission.', price_hour:80, price_day:520, deposit:500, advance:200, fuel:'Petrol', mileage:'50 km/l', transmission:'Automatic', seats:2, helmet_included:true, image_url:'Yamaha Fascino 125.jpg', status:'available', is_active:true },
+  { id:'local-12', name:'Bajaj Chetak EV', type:'electric', description:'Zero emissions, silent ride, ₹0.50/km running cost. Smart connectivity.', price_hour:120, price_day:800, deposit:1000, advance:300, fuel:'Electric', mileage:'95 km/charge', transmission:'Automatic', seats:2, helmet_included:true, image_url:'Bajaj Chetak EV.jpg', status:'available', is_active:true }
+];
+
+// ── App state ─────────────────────────────────────────────
+let allVehiclesData = [];
+let currentUser = null;
+let adminUser = null;
+
+// ════════════════════════════════════════════════════════
+//  UTILITIES
+// ════════════════════════════════════════════════════════
+function fmt(n) {
+  return '₹' + Number(n).toLocaleString('en-IN');
+}
+
+function genBookingId() {
+  return 'RI' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substr(2,4).toUpperCase();
+}
+
+function getLS(k) { try { return JSON.parse(localStorage.getItem(k)) || null; } catch { return null; } }
+function setLS(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} }
+
+function getUsers() { return getLS('ri_users') || []; }
+function setUsers(u) { setLS('ri_users', u); }
+function getLocalBookings() { return getLS('ri_bookings') || []; }
+function setLocalBookings(b) { setLS('ri_bookings', b); }
+
+// ── Toast ─────────────────────────────────────────────────
+function showToast(msg, type = 'info') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  const icons = { success:'check-circle', error:'x-circle', info:'info' };
+  t.innerHTML = `<i data-lucide="${icons[type]||'info'}" class="w-5 h-5 flex-shrink-0"></i><span>${msg}</span>`;
+  c.appendChild(t);
+  if (typeof lucide !== 'undefined') lucide.createIcons({ nodes: [t] });
+  setTimeout(() => {
+    t.style.cssText = 'opacity:0;transform:translateX(110px);transition:all .35s';
+    setTimeout(() => t.remove(), 380);
+  }, 3500);
+}
+
+// ── Password toggle ───────────────────────────────────────
+function togglePwd(id, btn) {
+  const el = document.getElementById(id);
+  const show = el.type === 'password';
+  el.type = show ? 'text' : 'password';
+  btn.innerHTML = `<i data-lucide="${show ? 'eye-off' : 'eye'}" class="w-4 h-4"></i>`;
+  if (typeof lucide !== 'undefined') lucide.createIcons({ nodes: [btn] });
+}
+
+// ── Image fallback ────────────────────────────────────────
+function imgFallback(el) {
+  el.onerror = null;
+  el.src = 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=70';
+}
+
+function vehicleImgSrc(v) {
+  if (!v.image_url) return 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=70';
+  if (v.image_url.startsWith('http')) return v.image_url;
+  return v.image_url; // local file
+}
+
+// ── Status badge ──────────────────────────────────────────
+function statusBadge(status) {
+  const map = {
+    pending:   ['badge-pending',   'Pending'],
+    confirmed: ['badge-confirmed', 'Confirmed'],
+    completed: ['badge-completed', 'Completed'],
+    cancelled: ['badge-cancelled', 'Cancelled'],
+    available: ['badge-confirmed', 'Available'],
+    unavailable:['badge-cancelled','Unavailable'],
+    maintenance:['badge-pending',  'Maintenance'],
+  };
+  const [cls, label] = map[status] || ['bg-surface-100 text-surface-600', status];
+  return `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold ${cls}">${label}</span>`;
+}
+
+// ── Type label ────────────────────────────────────────────
+function typeLabel(t) {
+  return { scooty:'Scooty', bike:'Bike', premium:'Premium Bike', electric:'Electric' }[t] || t;
+}
+function typeColor(t) {
+  return { scooty:'bg-igreen-100 text-igreen-700', bike:'bg-blue-100 text-blue-700', premium:'bg-saffron-100 text-saffron-700', electric:'bg-yellow-100 text-yellow-700' }[t] || 'bg-surface-100 text-surface-600';
+}
+
+// ════════════════════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════════════════════
+function navigateTo(page) {
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(`page-${page}`);
+  if (el) { el.classList.add('active'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  closeMobileMenu();
+  if (page === 'home') renderFeaturedVehicles();
+  if (page === 'vehicles') renderAllVehicles();
+  if (page === 'dashboard') renderDashboard();
+  if (page === 'admin') { checkAdminAccess() && loadAdminPanel(); }
+}
+
+function toggleMobileMenu() { document.getElementById('mobileMenu').classList.toggle('hidden'); }
+function closeMobileMenu() { document.getElementById('mobileMenu').classList.add('hidden'); }
+
+// ════════════════════════════════════════════════════════
+//  AUTH (localStorage-based for regular users)
+// ════════════════════════════════════════════════════════
+function updateAuthUI() {
+  const ab = document.getElementById('authButtons');
+  const um = document.getElementById('userMenu');
+  const mdb = document.getElementById('mobileDbLink');
+  if (currentUser) {
+    ab.classList.add('hidden'); um.classList.remove('hidden'); um.classList.add('flex');
+    const nn = document.getElementById('navUserName');
+    if (nn) nn.textContent = currentUser.name.split(' ')[0];
+    if (mdb) mdb.classList.remove('hidden');
+  } else {
+    ab.classList.remove('hidden'); um.classList.add('hidden'); um.classList.remove('flex');
+    if (mdb) mdb.classList.add('hidden');
+  }
+}
+
+function handleSignup(e) {
+  e.preventDefault();
+  const name = document.getElementById('signupName').value.trim();
+  const phone = document.getElementById('signupPhone').value.trim();
+  const email = document.getElementById('signupEmail').value.trim().toLowerCase();
+  const password = document.getElementById('signupPassword').value;
+  const phoneErr = document.getElementById('phoneError');
+
+  if (!/^[6-9][0-9]{9}$/.test(phone)) { phoneErr.classList.remove('hidden'); return; }
+  phoneErr.classList.add('hidden');
+  if (password.length < 6) { showToast('Password must be at least 6 characters', 'error'); return; }
+
+  const users = getUsers();
+  if (users.find(u => u.email === email)) { showToast('Email already registered', 'error'); return; }
+
+  const user = { id: Date.now().toString(), name, phone, email, password, joined: new Date().toISOString() };
+  users.push(user);
+  setUsers(users);
+  currentUser = user;
+  setLS('ri_current', user);
+  updateAuthUI();
+  showToast('Account created! Welcome to RideIndia 🎉', 'success');
+  navigateTo('home');
+  e.target.reset();
+}
+
+function handleLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('loginBtn');
+  btn.textContent = 'Logging in...';
+  const id = document.getElementById('loginEmail').value.trim().toLowerCase();
+  const pw = document.getElementById('loginPassword').value;
+  const users = getUsers();
+  const user = users.find(u => (u.email === id || u.phone === id) && u.password === pw);
+  btn.textContent = 'Login';
+  if (!user) { showToast('Invalid credentials. Please try again.', 'error'); return; }
+  currentUser = user;
+  setLS('ri_current', user);
+  updateAuthUI();
+  showToast(`Welcome back, ${user.name.split(' ')[0]}!`, 'success');
+  navigateTo('home');
+  e.target.reset();
+}
+
+function handleLogout() {
+  currentUser = null;
+  localStorage.removeItem('ri_current');
+  updateAuthUI();
+  showToast('Logged out successfully', 'info');
+  navigateTo('home');
+}
+
+// ════════════════════════════════════════════════════════
+//  VEHICLE LOADING
+// ════════════════════════════════════════════════════════
+async function loadVehicles() {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.from('vehicles').select('*').eq('is_active',true).order('name');
+      if (!error && data && data.length > 0) { allVehiclesData = data; return data; }
+    } catch(e) { console.warn('Supabase load failed, using local:', e.message); }
+  }
+  allVehiclesData = LOCAL_VEHICLES;
+  return LOCAL_VEHICLES;
+}
+
+async function loadAllVehiclesAdmin() {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.from('vehicles').select('*').order('name');
+      if (!error && data) return data;
+    } catch(e) {}
+  }
+  return LOCAL_VEHICLES;
+}
+
+function vehicleImgSrc(v) {
+  if (!v || !v.image_url) return 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=70';
+  if (v.image_url.startsWith('http')) return v.image_url;
+  return v.image_url;
+}
+
+function imgFallback(el) {
+  el.onerror = null;
+  el.src = 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=70';
+}
+
+function fmt(n) { return '\u20b9' + Number(n||0).toLocaleString('en-IN'); }
+function genBookingId() { return 'RI'+Date.now().toString(36).toUpperCase()+Math.random().toString(36).substr(2,4).toUpperCase(); }
+function getLS(k) { try { return JSON.parse(localStorage.getItem(k))||null; } catch { return null; } }
+function setLS(k,v) { try { localStorage.setItem(k,JSON.stringify(v)); } catch(e){} }
+function getUsers() { return getLS('ri_users')||[]; }
+function setUsers(u) { setLS('ri_users',u); }
+function getLocalBookings() { return getLS('ri_bookings')||[]; }
+function setLocalBookings(b) { setLS('ri_bookings',b); }
+function typeLabel(t) { return {scooty:'Scooty',bike:'Bike',premium:'Premium Bike',electric:'Electric'}[t]||t; }
+function typeColor(t) { return {scooty:'bg-igreen-100 text-igreen-700',bike:'bg-blue-100 text-blue-700',premium:'bg-saffron-100 text-saffron-700',electric:'bg-yellow-100 text-yellow-700'}[t]||'bg-surface-100 text-surface-600'; }
+function statusBadge(s) {
+  const map={pending:['badge-pending','Pending'],confirmed:['badge-confirmed','Confirmed'],completed:['badge-completed','Completed'],cancelled:['badge-cancelled','Cancelled'],available:['badge-confirmed','Available'],unavailable:['badge-cancelled','Unavailable'],maintenance:['badge-pending','Maintenance']};
+  const [cls,label]=map[s]||['bg-surface-100 text-surface-600',s];
+  return '<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold '+cls+'">'+label+'</span>';
+}
+
+// ═══ VEHICLE CARDS ═══
+function vehicleCardHTML(v, featured) {
+  var img=vehicleImgSrc(v);
+  var imgH=featured?'h-52':'h-44';
+  return '<div class="vehicle-card bg-white rounded-2xl border border-surface-200 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer" onclick="openVehicleDetail(\''+v.id+'\')">'
+    +'<div class="relative overflow-hidden '+imgH+'">'
+    +'<img src="'+img+'" alt="'+v.name+'" loading="lazy" class="vehicle-img w-full h-full object-cover" onerror="imgFallback(this)">'
+    +'<div class="absolute top-3 left-3"><span class="px-2.5 py-1 '+typeColor(v.type)+' text-xs font-semibold rounded-lg">'+typeLabel(v.type)+'</span></div>'
+    +(v.fuel==='Electric'?'<div class="absolute top-3 right-3 px-2.5 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded-lg">\u26a1 EV</div>':'')
+    +(v.helmet_included?'<div class="absolute bottom-3 right-3 px-2 py-1 bg-black/50 text-white text-xs rounded-lg">\uD83E\uDE96 Helmet</div>':'')
+    +'</div>'
+    +'<div class="p-4">'
+    +'<h3 class="font-semibold text-base leading-snug">'+v.name+'</h3>'
+    +'<div class="flex items-center gap-3 mt-1.5 text-xs text-surface-400"><span>\u26fd '+v.fuel+'</span><span>\uD83D\uDCCA '+v.mileage+'</span></div>'
+    +'<div class="flex items-center justify-between mt-3">'
+    +'<div><span class="text-lg font-bold text-saffron-600">'+fmt(v.price_hour)+'</span><span class="text-surface-400 text-xs">/hr</span>'
+    +'<span class="mx-1 text-surface-300">\u00b7</span><span class="text-sm font-semibold text-surface-700">'+fmt(v.price_day)+'</span><span class="text-surface-400 text-xs">/day</span></div>'
+    +'</div>'
+    +'<div class="flex gap-2 mt-3">'
+    +'<button onclick="event.stopPropagation();openVehicleDetail(\''+v.id+'\')" class="flex-1 py-2 border border-surface-200 text-surface-700 text-xs font-semibold rounded-xl hover:border-saffron-400 hover:text-saffron-600 transition-all">View Details</button>'
+    +'<button onclick="event.stopPropagation();openBookingModal(\''+v.id+'\')" class="flex-1 py-2 bg-saffron-500 text-white text-xs font-semibold rounded-xl hover:bg-saffron-600 transition-all">Book Now</button>'
+    +'</div></div></div>';
+}
+
+async function renderFeaturedVehicles() {
+  var c=document.getElementById('featuredVehicles');
+  if(!c) return;
+  if(allVehiclesData.length===0) await loadVehicles();
+  c.innerHTML=allVehiclesData.slice(0,6).map(function(v){return vehicleCardHTML(v,true);}).join('');
+  if(typeof lucide!=='undefined') lucide.createIcons();
+}
+
+async function renderAllVehicles() {
+  var loader=document.getElementById('vehiclesLoading');
+  if(loader) loader.style.display='block';
+  if(allVehiclesData.length===0) await loadVehicles();
+  if(loader) loader.style.display='none';
+  filterVehicles();
+}
+
+function filterVehicles() {
+  var search=(document.getElementById('searchInput')?document.getElementById('searchInput').value:'').toLowerCase();
+  var type=document.getElementById('typeFilter')?document.getElementById('typeFilter').value:'all';
+  var price=document.getElementById('priceFilter')?document.getElementById('priceFilter').value:'all';
+  var filtered=allVehiclesData.filter(function(v){
+    if(search && !v.name.toLowerCase().includes(search)) return false;
+    if(type!=='all' && v.type!==type) return false;
+    if(price==='low' && v.price_hour>=100) return false;
+    if(price==='mid' && (v.price_hour<100||v.price_hour>200)) return false;
+    if(price==='high' && v.price_hour<=200) return false;
+    return true;
+  });
+  var container=document.getElementById('allVehicles');
+  var noResults=document.getElementById('noResults');
+  var loader=document.getElementById('vehiclesLoading');
+  if(loader) loader.style.display='none';
+  if(!container) return;
+  if(filtered.length===0){container.innerHTML='';if(noResults) noResults.classList.remove('hidden');}
+  else{if(noResults) noResults.classList.add('hidden');container.innerHTML=filtered.map(function(v){return vehicleCardHTML(v,false);}).join('');if(typeof lucide!=='undefined') lucide.createIcons();}
+}
+
+// ═══ VEHICLE DETAIL MODAL ═══
+function openVehicleDetail(id) {
+  var v=allVehiclesData.find(function(x){return String(x.id)===String(id);});
+  if(!v) return;
+  var img=vehicleImgSrc(v);
+  document.getElementById('vehicleModalContent').innerHTML=
+    '<div class="flex flex-col md:flex-row">'
+    +'<div class="md:w-2/5 flex-shrink-0">'
+    +'<img src="'+img+'" alt="'+v.name+'" onerror="imgFallback(this)" class="w-full h-56 md:h-full object-cover rounded-t-2xl md:rounded-l-2xl md:rounded-tr-none">'
+    +'</div>'
+    +'<div class="flex-1 p-6 overflow-y-auto">'
+    +'<div class="flex items-start gap-3 mb-3"><div>'
+    +'<h2 class="text-2xl font-bold">'+v.name+'</h2>'
+    +'<div class="flex items-center gap-2 mt-1"><span class="px-2.5 py-0.5 '+typeColor(v.type)+' text-xs font-semibold rounded-lg">'+typeLabel(v.type)+'</span>'+statusBadge(v.status||'available')+'</div>'
+    +'</div></div>'
+    +(v.description?'<p class="text-surface-600 text-sm leading-relaxed mb-4">'+v.description+'</p>':'')
+    +'<div class="grid grid-cols-2 gap-3 mb-5">'
+    +'<div class="bg-surface-50 rounded-xl p-3"><div class="text-xs text-surface-400 mb-0.5">Fuel</div><div class="font-semibold text-sm">'+(v.fuel||'Petrol')+'</div></div>'
+    +'<div class="bg-surface-50 rounded-xl p-3"><div class="text-xs text-surface-400 mb-0.5">Mileage</div><div class="font-semibold text-sm">'+(v.mileage||'-')+'</div></div>'
+    +'<div class="bg-surface-50 rounded-xl p-3"><div class="text-xs text-surface-400 mb-0.5">Transmission</div><div class="font-semibold text-sm">'+(v.transmission||'Manual')+'</div></div>'
+    +'<div class="bg-surface-50 rounded-xl p-3"><div class="text-xs text-surface-400 mb-0.5">Seats</div><div class="font-semibold text-sm">'+(v.seats||2)+' persons</div></div>'
+    +'<div class="bg-surface-50 rounded-xl p-3"><div class="text-xs text-surface-400 mb-0.5">Helmet</div><div class="font-semibold text-sm">'+(v.helmet_included?'\u2705 Free':'No')+'</div></div>'
+    +'<div class="bg-surface-50 rounded-xl p-3"><div class="text-xs text-surface-400 mb-0.5">Status</div><div class="font-semibold text-sm capitalize">'+(v.status||'available')+'</div></div>'
+    +'</div>'
+    +'<div class="bg-gradient-to-r from-saffron-50 to-orange-50 rounded-2xl p-4 mb-5 border border-saffron-100">'
+    +'<h3 class="font-bold text-sm text-saffron-700 mb-3">Rental Pricing</h3>'
+    +'<div class="grid grid-cols-2 gap-3">'
+    +'<div><div class="text-xs text-surface-500">Per Hour</div><div class="text-xl font-bold text-saffron-600">'+fmt(v.price_hour)+'</div></div>'
+    +'<div><div class="text-xs text-surface-500">Per Day</div><div class="text-xl font-bold text-saffron-600">'+fmt(v.price_day)+'</div></div>'
+    +'<div><div class="text-xs text-surface-500">Security Deposit</div><div class="text-base font-bold text-surface-700">'+fmt(v.deposit||0)+'</div></div>'
+    +'<div><div class="text-xs text-surface-500">Advance Payment</div><div class="text-base font-bold text-surface-700">'+fmt(v.advance||0)+'</div></div>'
+    +'</div></div>'
+    +'<div class="bg-amber-50 rounded-xl p-3 mb-5 border border-amber-100 text-xs text-amber-800 space-y-1">'
+    +'<div class="font-semibold mb-1">\u26a0\ufe0f Important Rules</div>'
+    +'<div>\u2022 Valid driving license mandatory</div>'
+    +'<div>\u2022 Helmet compulsory</div>'
+    +'<div>\u2022 Late return: \u20b9100/hr extra</div>'
+    +'<div>\u2022 Deposit refunded on safe return</div>'
+    +'</div>'
+    +'<button onclick="closeVehicleModal();setTimeout(function(){openBookingModal(\''+v.id+'\');},100)" class="w-full py-3.5 bg-gradient-to-r from-saffron-500 to-saffron-600 text-white font-bold rounded-xl hover:shadow-lg transition-all text-base">'
+    +'Book Now \u2014 '+fmt(v.price_hour)+'/hr</button>'
+    +'</div></div>';
+  document.getElementById('vehicleModal').classList.remove('hidden');
+  document.body.style.overflow='hidden';
+}
+
+function closeVehicleModal(e) {
+  if(e && e.target!==document.getElementById('vehicleModal')) return;
+  document.getElementById('vehicleModal').classList.add('hidden');
+  document.body.style.overflow='';
+}
+
+// ═══ BOOKING MODAL ═══
+var bookingVehicle=null;
+
+function openBookingModal(id) {
+  var v=allVehiclesData.find(function(x){return String(x.id)===String(id);});
+  if(!v) return;
+  if(v.status==='unavailable'||v.status==='maintenance'){showToast('This vehicle is currently unavailable','error');return;}
+  bookingVehicle=v;
+  var today=new Date().toISOString().split('T')[0];
+  var prefName=currentUser?currentUser.name:'';
+  var prefPhone=currentUser?currentUser.phone:'';
+  var prefEmail=currentUser?currentUser.email:'';
+  document.getElementById('bookingModalContent').innerHTML=
+    '<div class="p-6">'
+    +'<div class="flex items-center gap-3 mb-5">'
+    +'<img src="'+vehicleImgSrc(v)+'" onerror="imgFallback(this)" class="w-14 h-14 rounded-xl object-cover border border-surface-200">'
+    +'<div><h2 class="text-xl font-bold">Book '+v.name+'</h2><p class="text-surface-500 text-sm">'+fmt(v.price_hour)+'/hr \u00b7 '+fmt(v.price_day)+'/day</p></div>'
+    +'</div>'
+    +'<form id="bookingForm" onsubmit="submitBooking(event)" class="space-y-4">'
+    +'<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Full Name *</label><input type="text" name="customerName" required placeholder="Rahul Sharma" class="inp" value="'+prefName+'"></div>'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Phone *</label><input type="tel" name="customerPhone" required placeholder="9876543210" pattern="[6-9][0-9]{9}" maxlength="10" class="inp" value="'+prefPhone+'"></div>'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Email</label><input type="email" name="customerEmail" placeholder="you@email.com" class="inp" value="'+prefEmail+'"></div>'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Pickup City *</label><input type="text" name="pickupCity" required placeholder="Delhi, Mumbai..." class="inp"></div>'
+    +'</div>'
+    +'<div class="grid grid-cols-2 gap-3">'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Pickup Date *</label><input type="date" name="pickupDate" required min="'+today+'" class="inp" onchange="calcBookingTotal()"></div>'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Pickup Time *</label><input type="time" name="pickupTime" required value="10:00" class="inp" onchange="calcBookingTotal()"></div>'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Return Date *</label><input type="date" name="returnDate" required min="'+today+'" class="inp" onchange="calcBookingTotal()"></div>'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Return Time *</label><input type="time" name="returnTime" required value="10:00" class="inp" onchange="calcBookingTotal()"></div>'
+    +'</div>'
+    +'<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Rental Type *</label><select name="rentalType" class="inp" onchange="calcBookingTotal()"><option value="daily">Daily</option><option value="hourly">Hourly</option></select></div>'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">License No. *</label><input type="text" name="licenseNumber" required placeholder="DL0119900012345" class="inp" style="text-transform:uppercase"></div>'
+    +'</div>'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Payment Method *</label>'
+    +'<select name="paymentMethod" class="inp"><option value="UPI">UPI (GPay/PhonePe/Paytm)</option><option value="Cash">Cash on Pickup</option><option value="Card">Card (Placeholder)</option></select></div>'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Notes / Address</label><textarea name="notes" rows="2" placeholder="Address, landmark, special instructions..." class="inp resize-none"></textarea></div>'
+    +'<div id="bookingSummary" class="bg-surface-50 rounded-xl p-4 border border-surface-200 text-sm hidden">'
+    +'<h3 class="font-bold text-surface-800 mb-3">Price Breakdown</h3>'
+    +'<div class="space-y-1.5">'
+    +'<div class="flex justify-between"><span class="text-surface-500">Duration</span><span id="bsDuration" class="font-medium">-</span></div>'
+    +'<div class="flex justify-between"><span class="text-surface-500">Rent Amount</span><span id="bsRent" class="font-medium">-</span></div>'
+    +'<div class="flex justify-between"><span class="text-surface-500">Security Deposit</span><span id="bsDeposit" class="font-medium">-</span></div>'
+    +'<div class="flex justify-between"><span class="text-surface-500">Advance Now</span><span id="bsAdvance" class="font-medium text-saffron-600">-</span></div>'
+    +'<div class="border-t pt-2 flex justify-between font-bold text-base"><span>Total Payable</span><span id="bsTotal" class="text-saffron-600">-</span></div>'
+    +'</div></div>'
+    +'<button type="submit" id="bookSubmitBtn" class="w-full py-3.5 bg-gradient-to-r from-saffron-500 to-saffron-600 text-white font-bold rounded-xl hover:shadow-lg transition-all">Confirm Booking</button>'
+    +'</form></div>';
+  document.getElementById('bookingModal').classList.remove('hidden');
+  document.body.style.overflow='hidden';
+}
+
+function closeBookingModal(e) {
+  if(e && e.target!==document.getElementById('bookingModal')) return;
+  document.getElementById('bookingModal').classList.add('hidden');
+  document.body.style.overflow='';
+  bookingVehicle=null;
+}
+
+function calcBookingTotal() {
+  if(!bookingVehicle) return;
+  var f=document.getElementById('bookingForm');
+  if(!f) return;
+  var pDate=f.querySelector('[name=pickupDate]').value;
+  var pTime=f.querySelector('[name=pickupTime]').value||'10:00';
+  var rDate=f.querySelector('[name=returnDate]').value;
+  var rTime=f.querySelector('[name=returnTime]').value||'10:00';
+  var rType=f.querySelector('[name=rentalType]').value||'daily';
+  if(!pDate||!rDate) return;
+  var pickup=new Date(pDate+'T'+pTime);
+  var ret=new Date(rDate+'T'+rTime);
+  if(ret<=pickup) return;
+  var diffMs=ret-pickup;
+  var duration,rentAmount,label;
+  if(rType==='hourly'){duration=Math.max(1,Math.ceil(diffMs/3600000));rentAmount=duration*bookingVehicle.price_hour;label=duration+' hour'+(duration>1?'s':'');}
+  else{duration=Math.max(1,Math.ceil(diffMs/86400000));rentAmount=duration*bookingVehicle.price_day;label=duration+' day'+(duration>1?'s':'');}
+  var deposit=bookingVehicle.deposit||0;
+  var advance=bookingVehicle.advance||0;
+  var total=rentAmount+deposit+advance;
+  var s=document.getElementById('bookingSummary');
+  if(s){
+    s.classList.remove('hidden');
+    document.getElementById('bsDuration').textContent=label;
+    document.getElementById('bsRent').textContent=fmt(rentAmount);
+    document.getElementById('bsDeposit').textContent=fmt(deposit);
+    document.getElementById('bsAdvance').textContent=fmt(advance);
+    document.getElementById('bsTotal').textContent=fmt(total);
+  }
+  f.dataset.duration=duration;f.dataset.rentAmount=rentAmount;f.dataset.deposit=deposit;f.dataset.advance=advance;f.dataset.total=total;f.dataset.rentalType=rType;
+}
+
+async function submitBooking(e) {
+  e.preventDefault();
+  var f=e.target;
+  var btn=document.getElementById('bookSubmitBtn');
+  btn.disabled=true;btn.innerHTML='Processing...';
+  var fd=new FormData(f);
+  var pDate=fd.get('pickupDate'),rDate=fd.get('returnDate');
+  var pickup=new Date(pDate+'T'+(fd.get('pickupTime')||'10:00'));
+  var ret=new Date(rDate+'T'+(fd.get('returnTime')||'10:00'));
+  if(ret<=pickup){showToast('Return must be after pickup','error');btn.disabled=false;btn.innerHTML='Confirm Booking';return;}
+  calcBookingTotal();
+  var booking={
+    id:genBookingId(),
+    vehicle_id:bookingVehicle.id,vehicle_name:bookingVehicle.name,vehicle_type:bookingVehicle.type,
+    vehicle_image:vehicleImgSrc(bookingVehicle),
+    customer_name:fd.get('customerName').trim(),customer_email:(fd.get('customerEmail')||'').trim(),
+    customer_phone:fd.get('customerPhone').trim(),pickup_city:fd.get('pickupCity').trim(),
+    pickup_date:fd.get('pickupDate'),pickup_time:fd.get('pickupTime'),
+    return_date:fd.get('returnDate'),return_time:fd.get('returnTime'),
+    rental_type:f.dataset.rentalType||fd.get('rentalType'),
+    license_number:fd.get('licenseNumber').trim().toUpperCase(),
+    notes:(fd.get('notes')||'').trim(),payment_method:fd.get('paymentMethod'),
+    rent_amount:Number(f.dataset.rentAmount||0),deposit_amount:Number(f.dataset.deposit||bookingVehicle.deposit||0),
+    advance_amount:Number(f.dataset.advance||bookingVehicle.advance||0),total_amount:Number(f.dataset.total||0),
+    duration:Number(f.dataset.duration||1),status:'pending',created_at:new Date().toISOString(),user_id:currentUser?currentUser.id:null
+  };
+  if(!booking.customer_name||!booking.customer_phone||!booking.pickup_city||!booking.license_number){showToast('Please fill all required fields','error');btn.disabled=false;btn.innerHTML='Confirm Booking';return;}
+  if(!/^[6-9][0-9]{9}$/.test(booking.customer_phone)){showToast('Enter valid 10-digit phone number','error');btn.disabled=false;btn.innerHTML='Confirm Booking';return;}
+  if(supabase){
+    try{
+      var vid=String(booking.vehicle_id).startsWith('local')?null:booking.vehicle_id;
+      await supabase.from('bookings').insert([{vehicle_id:vid,vehicle_name:booking.vehicle_name,vehicle_type:booking.vehicle_type,customer_name:booking.customer_name,customer_email:booking.customer_email,customer_phone:booking.customer_phone,pickup_city:booking.pickup_city,pickup_date:booking.pickup_date,pickup_time:booking.pickup_time,return_date:booking.return_date,return_time:booking.return_time,rental_type:booking.rental_type,license_number:booking.license_number,notes:booking.notes,payment_method:booking.payment_method,rent_amount:booking.rent_amount,deposit_amount:booking.deposit_amount,advance_amount:booking.advance_amount,total_amount:booking.total_amount,status:'pending'}]);
+    }catch(err){console.warn('Supabase booking error:',err.message);}
+  }
+  var lb=getLocalBookings();lb.unshift(booking);setLocalBookings(lb);
+  btn.disabled=false;btn.innerHTML='Confirm Booking';
+  closeBookingModal();
+  showBookingConfirmation(booking);
+  showToast('Booking confirmed! \uD83C\uDF89','success');
+}
+
+function showBookingConfirmation(b) {
+  document.getElementById('confirmModalContent').innerHTML=
+    '<div class="p-6 text-center">'
+    +'<div class="w-16 h-16 bg-igreen-100 rounded-full flex items-center justify-center mx-auto mb-4">'
+    +'<i data-lucide="check-circle" class="w-9 h-9 text-igreen-600"></i></div>'
+    +'<h2 class="text-2xl font-bold mb-1">Booking Confirmed!</h2>'
+    +'<p class="text-surface-500 text-sm mb-5">Your booking has been placed successfully</p>'
+    +'<div class="bg-saffron-50 rounded-2xl p-4 mb-5 border border-saffron-100 text-left space-y-2 text-sm">'
+    +'<div class="flex justify-between"><span class="text-surface-500">Booking ID</span><span class="font-bold text-saffron-600">'+b.id+'</span></div>'
+    +'<div class="flex justify-between"><span class="text-surface-500">Vehicle</span><span class="font-semibold">'+b.vehicle_name+'</span></div>'
+    +'<div class="flex justify-between"><span class="text-surface-500">Pickup</span><span class="font-medium">'+b.pickup_date+' '+b.pickup_time+'</span></div>'
+    +'<div class="flex justify-between"><span class="text-surface-500">Return</span><span class="font-medium">'+b.return_date+' '+b.return_time+'</span></div>'
+    +'<div class="flex justify-between"><span class="text-surface-500">City</span><span class="font-medium">'+b.pickup_city+'</span></div>'
+    +'<div class="border-t border-saffron-100 pt-2 flex justify-between font-bold text-base"><span>Total</span><span class="text-saffron-600">'+fmt(b.total_amount)+'</span></div>'
+    +'</div>'
+    +'<div class="flex gap-3">'
+    +'<button onclick="document.getElementById(\'confirmModal\').classList.add(\'hidden\');document.body.style.overflow=\'\'" class="flex-1 py-3 border border-surface-200 text-surface-700 text-sm font-semibold rounded-xl hover:bg-surface-50 transition-all">Close</button>'
+    +'<button onclick="document.getElementById(\'confirmModal\').classList.add(\'hidden\');document.body.style.overflow=\'\';navigateTo(\'dashboard\')" class="flex-1 py-3 bg-saffron-500 text-white text-sm font-semibold rounded-xl hover:bg-saffron-600 transition-all">View Dashboard</button>'
+    +'</div></div>';
+  document.getElementById('confirmModal').classList.remove('hidden');
+  document.body.style.overflow='hidden';
+  if(typeof lucide!=='undefined') lucide.createIcons();
+}
+
+// ═══ DASHBOARD ═══
+function renderDashboard() {
+  if(!currentUser){navigateTo('login');return;}
+  var users=getUsers();
+  var fresh=users.find(function(u){return u.id===currentUser.id;});
+  if(fresh) currentUser=fresh;
+  document.getElementById('dashUserName').textContent=currentUser.name.split(' ')[0];
+  document.getElementById('dashName').textContent=currentUser.name;
+  document.getElementById('dashEmail').textContent=currentUser.email;
+  document.getElementById('dashPhone').textContent='+91 '+currentUser.phone;
+  document.getElementById('dashJoined').textContent=new Date(currentUser.joined).toLocaleDateString('en-IN',{year:'numeric',month:'long',day:'numeric'});
+  renderDashboardBookings();
+}
+
+function renderDashboardBookings() {
+  var container=document.getElementById('dashBookings');
+  if(!container) return;
+  var all=getLocalBookings();
+  var mine=currentUser?all.filter(function(b){return b.user_id===currentUser.id||b.customer_phone===currentUser.phone||b.customer_email===currentUser.email;}):all;
+  if(mine.length===0){
+    container.innerHTML='<div class="text-center py-10 text-surface-400"><i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 text-surface-300"></i><p>No bookings yet</p><a href="#" onclick="navigateTo(\'vehicles\')" class="mt-3 inline-block text-saffron-600 font-medium text-sm hover:underline">Browse vehicles \u2192</a></div>';
+    if(typeof lucide!=='undefined') lucide.createIcons();return;
+  }
+  container.innerHTML=mine.map(function(b){
+    return '<div class="border border-surface-200 rounded-2xl p-4 mb-4 hover:shadow-md transition-shadow">'
+      +'<div class="flex items-start gap-4">'
+      +'<img src="'+(b.vehicle_image||'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=100&q=70')+'" onerror="imgFallback(this)" class="w-16 h-16 rounded-xl object-cover flex-shrink-0">'
+      +'<div class="flex-1 min-w-0"><div class="flex items-center justify-between gap-2 flex-wrap"><h3 class="font-semibold text-base">'+b.vehicle_name+'</h3>'+statusBadge(b.status||'pending')+'</div>'
+      +'<div class="text-xs text-surface-500 mt-1 space-y-0.5">'
+      +'<div>\uD83D\uDCC5 '+b.pickup_date+' '+b.pickup_time+' \u2192 '+b.return_date+' '+b.return_time+'</div>'
+      +'<div>\uD83D\uDCCD '+(b.pickup_city||'-')+' &nbsp;|\u00a0 \uD83D\uDCB3 '+b.payment_method+'</div>'
+      +'<div class="font-semibold text-surface-700 mt-1">Total: '+fmt(b.total_amount)+'</div>'
+      +'</div></div></div>'
+      +'<div class="flex items-center justify-between mt-3 pt-3 border-t border-surface-100">'
+      +'<span class="text-xs text-surface-400">ID: '+b.id+'</span>'
+      +((b.status==='pending')?'<button onclick="cancelBooking(\''+b.id+'\')" class="px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors">Cancel Booking</button>':'<span class="text-xs text-surface-400 italic">Cannot cancel</span>')
+      +'</div></div>';
+  }).join('');
+  if(typeof lucide!=='undefined') lucide.createIcons();
+}
+
+function cancelBooking(bid) {
+  if(!confirm('Cancel this booking?')) return;
+  var bs=getLocalBookings();
+  var idx=bs.findIndex(function(b){return b.id===bid;});
+  if(idx===-1){showToast('Booking not found','error');return;}
+  bs[idx].status='cancelled';setLocalBookings(bs);
+  showToast('Booking cancelled','info');renderDashboardBookings();
+}
+
+// ═══ CONTACT ═══
+async function handleContact(e) {
+  e.preventDefault();
+  var fd=new FormData(e.target);
+  var data={name:fd.get('name').trim(),email:fd.get('email').trim(),phone:fd.get('phone')||'',subject:fd.get('subject')||'General Inquiry',message:fd.get('message').trim()};
+  if(!data.name||!data.email||!data.message){showToast('Please fill name, email and message','error');return;}
+  try{
+    var r=await fetch('http://localhost:3001/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    var res=await r.json();
+    if(res.success){showToast('Message sent! We\'ll reply within 2 hours.','success');e.target.reset();}
+    else showToast(res.error||'Failed to send','error');
+  }catch{showToast('Message sent! (Server offline — we\'ll see it soon)','info');e.target.reset();}
+}
+
+// ═══ ADMIN ═══
+function handleAdminLogin(e) {
+  e.preventDefault();
+  var email=document.getElementById('adminEmail').value.trim().toLowerCase();
+  var pass=document.getElementById('adminPassword').value;
+  var btn=document.getElementById('adminLoginBtn');
+  if(email!==ADMIN_EMAIL){showToast('Access denied. Not an admin email.','error');return;}
+  if(pass.length<4){showToast('Invalid password','error');return;}
+  adminUser={email:email};
+  setLS('ri_admin',adminUser);
+  btn.textContent='Logged in!';
+  showToast('Admin access granted','success');
+  setTimeout(function(){navigateTo('admin');},400);
+}
+
+function handleAdminLogout() {
+  adminUser=null;localStorage.removeItem('ri_admin');
+  showToast('Admin logged out','info');navigateTo('home');
+}
+
+function checkAdminAccess() {
+  if(!adminUser){navigateTo('admin-login');return false;}
+  return true;
+}
+
+function loadAdminPanel() {
+  loadAdminVehicles();
+}
+
+async function loadAdminVehicles() {
+  var data=await loadAllVehiclesAdmin();
+  renderAdminVehicles(data);
+}
+
+function renderAdminVehicles(data) {
+  var c=document.getElementById('adminVehiclesList');
+  if(!c) return;
+  if(!data||data.length===0){c.innerHTML='<div class="col-span-4 text-center py-10 text-surface-400">No vehicles found. Add your first vehicle!</div>';return;}
+  c.innerHTML=data.map(function(v){
+    return '<div class="bg-white rounded-2xl border border-surface-200 overflow-hidden hover:shadow-md transition-shadow">'
+      +'<div class="relative h-40">'
+      +'<img src="'+vehicleImgSrc(v)+'" onerror="imgFallback(this)" class="w-full h-full object-cover">'
+      +'<div class="absolute top-2 left-2"><span class="px-2 py-0.5 '+typeColor(v.type)+' text-xs font-semibold rounded-lg">'+typeLabel(v.type)+'</span></div>'
+      +'<div class="absolute top-2 right-2">'+statusBadge(v.status||'available')+'</div>'
+      +(v.is_active===false?'<div class="absolute inset-0 bg-black/40 flex items-center justify-center"><span class="text-white font-bold text-sm bg-black/60 px-3 py-1 rounded-full">INACTIVE</span></div>':'')
+      +'</div>'
+      +'<div class="p-3">'
+      +'<h3 class="font-semibold text-sm">'+v.name+'</h3>'
+      +'<div class="text-xs text-surface-500 mt-0.5">'+fmt(v.price_hour)+'/hr \u00b7 '+fmt(v.price_day)+'/day</div>'
+      +'<div class="flex gap-2 mt-3">'
+      +'<button onclick="openAdminVehicleForm(\''+v.id+'\')" class="flex-1 py-1.5 text-xs font-semibold border border-surface-200 rounded-lg hover:border-saffron-400 hover:text-saffron-600 transition-all">Edit</button>'
+      +'<button onclick="toggleVehicleActive(\''+v.id+'\','+(v.is_active===false?'true':'false')+')" class="flex-1 py-1.5 text-xs font-semibold '+(v.is_active===false?'bg-igreen-50 text-igreen-700':'bg-red-50 text-red-600')+' rounded-lg hover:opacity-80 transition-all">'+(v.is_active===false?'Activate':'Deactivate')+'</button>'
+      +'<button onclick="deleteVehicleAdmin(\''+v.id+'\')" class="py-1.5 px-2 text-xs font-semibold bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-all">Del</button>'
+      +'</div></div></div>';
+  }).join('');
+}
+
+async function toggleVehicleActive(id,activate) {
+  if(supabase){
+    try{await supabase.from('vehicles').update({is_active:activate}).eq('id',id);}catch(e){console.warn(e);}
+  }
+  showToast(activate?'Vehicle activated':'Vehicle deactivated','success');
+  loadAdminVehicles();
+}
+
+async function deleteVehicleAdmin(id) {
+  if(!confirm('Delete this vehicle? This cannot be undone.')) return;
+  if(supabase){
+    try{
+      var{error}=await supabase.from('vehicles').delete().eq('id',id);
+      if(error) throw error;
+      showToast('Vehicle deleted','success');
+    }catch(e){showToast('Delete failed: '+e.message,'error');return;}
+  } else {
+    var idx=allVehiclesData.findIndex(function(v){return String(v.id)===String(id);});
+    if(idx!==-1) allVehiclesData.splice(idx,1);
+    showToast('Vehicle removed locally','info');
+  }
+  loadAdminVehicles();
+}
+
+function switchAdminTab(tab) {
+  document.getElementById('adminTabVehicles').classList.toggle('hidden', tab!=='vehicles');
+  document.getElementById('adminTabBookings').classList.toggle('hidden', tab!=='bookings');
+  document.getElementById('tabVehiclesBtn').classList.toggle('active', tab==='vehicles');
+  document.getElementById('tabBookingsBtn').classList.toggle('active', tab==='bookings');
+  if(tab==='bookings') loadAdminBookings();
+}
+
+async function loadAdminBookings() {
+  var c=document.getElementById('adminBookingsList');
+  if(!c) return;
+  c.innerHTML='<div class="text-center py-8 text-surface-400">Loading bookings...</div>';
+  var bookings=[];
+  if(supabase){
+    try{
+      var{data,error}=await supabase.from('bookings').select('*').order('created_at',{ascending:false});
+      if(!error&&data) bookings=data;
+    }catch(e){console.warn(e);}
+  }
+  if(bookings.length===0) bookings=getLocalBookings();
+  renderAdminBookings(bookings);
+}
+
+function renderAdminBookings(bookings) {
+  var c=document.getElementById('adminBookingsList');
+  if(!c) return;
+  if(!bookings||bookings.length===0){c.innerHTML='<div class="text-center py-10 text-surface-400"><i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3"></i><p>No bookings yet</p></div>';if(typeof lucide!=='undefined') lucide.createIcons();return;}
+  c.innerHTML='<div class="overflow-x-auto rounded-2xl border border-surface-200"><table class="w-full text-sm"><thead><tr class="bg-surface-50 text-left"><th class="px-4 py-3 font-semibold text-surface-600">Customer</th><th class="px-4 py-3 font-semibold text-surface-600">Vehicle</th><th class="px-4 py-3 font-semibold text-surface-600">Dates</th><th class="px-4 py-3 font-semibold text-surface-600">Amount</th><th class="px-4 py-3 font-semibold text-surface-600">Status</th><th class="px-4 py-3 font-semibold text-surface-600">Action</th></tr></thead><tbody>'
+    +bookings.map(function(b){
+      return '<tr class="border-t border-surface-100 hover:bg-surface-50">'
+        +'<td class="px-4 py-3"><div class="font-medium">'+b.customer_name+'</div><div class="text-xs text-surface-400">'+(b.customer_phone||'')+'</div><div class="text-xs text-surface-400">'+(b.customer_email||'')+'</div></td>'
+        +'<td class="px-4 py-3"><div class="font-medium">'+(b.vehicle_name||'-')+'</div><div class="text-xs text-surface-400">'+(b.vehicle_type||'')+'</div></td>'
+        +'<td class="px-4 py-3 text-xs text-surface-600"><div>Pickup: '+(b.pickup_date||'-')+' '+(b.pickup_time||'')+'</div><div>Return: '+(b.return_date||'-')+' '+(b.return_time||'')+'</div><div class="mt-0.5 text-surface-400">'+(b.pickup_city||'')+'</div></td>'
+        +'<td class="px-4 py-3 font-semibold text-saffron-600">'+fmt(b.total_amount||0)+'</td>'
+        +'<td class="px-4 py-3">'+statusBadge(b.status||'pending')+'</td>'
+        +'<td class="px-4 py-3">'
+        +'<select onchange="updateBookingStatus(\''+b.id+'\',this.value)" class="inp py-1.5 px-2 text-xs">'
+        +'<option value="pending"'+(b.status==='pending'?' selected':'')+'>Pending</option>'
+        +'<option value="confirmed"'+(b.status==='confirmed'?' selected':'')+'>Confirmed</option>'
+        +'<option value="completed"'+(b.status==='completed'?' selected':'')+'>Completed</option>'
+        +'<option value="cancelled"'+(b.status==='cancelled'?' selected':'')+'>Cancelled</option>'
+        +'</select></td></tr>';
+    }).join('')
+    +'</tbody></table></div>';
+}
+
+async function updateBookingStatus(id,status) {
+  if(supabase){
+    try{await supabase.from('bookings').update({status:status}).eq('id',id);showToast('Status updated to '+status,'success');return;}
+    catch(e){console.warn(e);}
+  }
+  var bs=getLocalBookings();
+  var idx=bs.findIndex(function(b){return b.id===id;});
+  if(idx!==-1){bs[idx].status=status;setLocalBookings(bs);}
+  showToast('Status updated to '+status,'success');
+}
+
+// ═══ ADMIN VEHICLE FORM ═══
+var editingVehicleId=null;
+
+function openAdminVehicleForm(id) {
+  editingVehicleId=id||null;
+  var v=id?allVehiclesData.find(function(x){return String(x.id)===String(id);}):null;
+  var isEdit=!!v;
+  document.getElementById('adminVehicleFormContent').innerHTML=
+    '<div class="p-6">'
+    +'<h2 class="text-xl font-bold mb-5">'+(isEdit?'Edit Vehicle':'Add New Vehicle')+'</h2>'
+    +'<form id="adminVehicleForm" onsubmit="saveAdminVehicle(event)" class="space-y-4">'
+    +'<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Vehicle Name *</label><input type="text" name="name" required placeholder="Honda Activa 6G" class="inp" value="'+(v?v.name:'')+'"></div>'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Type *</label><select name="type" class="inp"><option value="scooty"'+(v&&v.type==='scooty'?' selected':'')+'>Scooty</option><option value="bike"'+(v&&v.type==='bike'?' selected':'')+'>Bike</option><option value="premium"'+(v&&v.type==='premium'?' selected':'')+'>Premium Bike</option><option value="electric"'+(v&&v.type==='electric'?' selected':'')+'>Electric</option></select></div>'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Price per Hour (₹) *</label><input type="number" name="price_hour" required min="1" placeholder="80" class="inp" value="'+(v?v.price_hour:'')+'"></div>'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Price per Day (₹) *</label><input type="number" name="price_day" required min="1" placeholder="550" class="inp" value="'+(v?v.price_day:'')+'"></div>'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Security Deposit (₹)</label><input type="number" name="deposit" min="0" placeholder="500" class="inp" value="'+(v?v.deposit||0:'0')+'"></div>'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Advance Amount (₹)</label><input type="number" name="advance" min="0" placeholder="200" class="inp" value="'+(v?v.advance||0:'0')+'"></div>'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Fuel Type</label><select name="fuel" class="inp"><option value="Petrol"'+(v&&v.fuel==='Petrol'?' selected':'')+'>Petrol</option><option value="Electric"'+(v&&v.fuel==='Electric'?' selected':'')+'>Electric</option><option value="Diesel"'+(v&&v.fuel==='Diesel'?' selected':'')+'>Diesel</option></select></div>'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Mileage</label><input type="text" name="mileage" placeholder="50 km/l" class="inp" value="'+(v?v.mileage||'':'')+'"></div>'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Transmission</label><select name="transmission" class="inp"><option value="Manual"'+(v&&v.transmission==='Manual'?' selected':'')+'>Manual</option><option value="Automatic"'+(v&&v.transmission==='Automatic'?' selected':'')+'>Automatic</option></select></div>'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Seats</label><input type="number" name="seats" min="1" max="4" placeholder="2" class="inp" value="'+(v?v.seats||2:2)+'"></div>'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Status</label><select name="status" class="inp"><option value="available"'+(v&&v.status==='available'?' selected':'')+'>Available</option><option value="unavailable"'+(v&&v.status==='unavailable'?' selected':'')+'>Unavailable</option><option value="maintenance"'+(v&&v.status==='maintenance'?' selected':'')+'>Maintenance</option></select></div>'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Helmet Included</label><select name="helmet_included" class="inp"><option value="true"'+(v&&v.helmet_included!==false?' selected':'')+'>Yes - Free</option><option value="false"'+(v&&v.helmet_included===false?' selected':'')+'>No</option></select></div>'
+    +'</div>'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Image URL</label><input type="url" name="image_url" placeholder="https://..." class="inp" value="'+(v?v.image_url||'':'')+'"></div>'
+    +'<div><label class="block text-xs font-semibold text-surface-600 mb-1">Description</label><textarea name="description" rows="3" placeholder="Brief vehicle description..." class="inp resize-none">'+(v?v.description||'':'')+'</textarea></div>'
+    +'<div class="flex gap-3">'
+    +'<button type="button" onclick="closeAdminVehicleModal()" class="flex-1 py-3 border border-surface-200 text-surface-700 font-semibold rounded-xl hover:bg-surface-50 transition-all">Cancel</button>'
+    +'<button type="submit" class="flex-1 py-3 bg-saffron-500 text-white font-bold rounded-xl hover:bg-saffron-600 transition-all">'+(isEdit?'Update Vehicle':'Add Vehicle')+'</button>'
+    +'</div>'
+    +'</form></div>';
+  document.getElementById('adminVehicleModal').classList.remove('hidden');
+  document.body.style.overflow='hidden';
+}
+
+function closeAdminVehicleModal(e) {
+  if(e&&e.target!==document.getElementById('adminVehicleModal')) return;
+  document.getElementById('adminVehicleModal').classList.add('hidden');
+  document.body.style.overflow='';
+  editingVehicleId=null;
+}
+
+async function saveAdminVehicle(e) {
+  e.preventDefault();
+  var fd=new FormData(e.target);
+  var vData={
+    name:fd.get('name').trim(),type:fd.get('type'),
+    price_hour:Number(fd.get('price_hour')),price_day:Number(fd.get('price_day')),
+    deposit:Number(fd.get('deposit')||0),advance:Number(fd.get('advance')||0),
+    fuel:fd.get('fuel'),mileage:fd.get('mileage'),
+    transmission:fd.get('transmission'),seats:Number(fd.get('seats')||2),
+    helmet_included:fd.get('helmet_included')==='true',
+    status:fd.get('status'),image_url:fd.get('image_url')||null,
+    description:fd.get('description')||null,is_active:true
+  };
+  if(supabase){
+    try{
+      if(editingVehicleId){
+        var{error}=await supabase.from('vehicles').update(vData).eq('id',editingVehicleId);
+        if(error) throw error;
+        showToast('Vehicle updated!','success');
+      } else {
+        var{error:err}=await supabase.from('vehicles').insert([vData]);
+        if(err) throw err;
+        showToast('Vehicle added!','success');
+      }
+      closeAdminVehicleModal();
+      await loadVehicles();
+      loadAdminVehicles();
+      return;
+    }catch(err){showToast('Save failed: '+err.message,'error');return;}
+  }
+  // Local fallback
+  if(editingVehicleId){
+    var idx=allVehiclesData.findIndex(function(v){return String(v.id)===String(editingVehicleId);});
+    if(idx!==-1){allVehiclesData[idx]=Object.assign({},allVehiclesData[idx],vData);}
+    showToast('Vehicle updated (local)','success');
+  } else {
+    vData.id='local-'+Date.now();
+    allVehiclesData.push(vData);
+    showToast('Vehicle added (local)','success');
+  }
+  closeAdminVehicleModal();
+  renderAdminVehicles(allVehiclesData);
+}
+
+// ═══ INIT ═══
+async function init() {
+  // Restore session
+  var saved=getLS('ri_current');
+  if(saved){var users=getUsers();var valid=users.find(function(u){return u.id===saved.id;});if(valid) currentUser=valid;}
+  var savedAdmin=getLS('ri_admin');
+  if(savedAdmin) adminUser=savedAdmin;
+  updateAuthUI();
+  await loadVehicles();
+  renderFeaturedVehicles();
+  if(typeof lucide!=='undefined') lucide.createIcons();
+}
+
+document.addEventListener('DOMContentLoaded',init);
+
+</script>
+
+</body>
+</html>

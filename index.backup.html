@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RideIndia — Affordable Bike & Scooty Rentals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<!-- Supabase JS Client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          saffron: { 50:'#FFF7ED',100:'#FFEDD5',200:'#FED7AA',300:'#FDBA74',400:'#FB923C',500:'#FF6B00',600:'#EA580C',700:'#C2410C',800:'#9A3412',900:'#7C2D12' },
+          igreen:  { 50:'#F0FDF4',100:'#DCFCE7',200:'#BBF7D0',300:'#86EFAC',400:'#4ADE80',500:'#22C55E',600:'#138808',700:'#166534',800:'#14532D',900:'#052E16' },
+          surface: { 50:'#FAFAF9',100:'#F5F5F4',200:'#E7E5E4',300:'#D6D3D1',400:'#A8A29E',500:'#78716C',600:'#57534E',700:'#44403C',800:'#292524',900:'#1C1917' }
+        },
+        fontFamily: { sans: ['Inter','sans-serif'] }
+      }
+    }
+  }
+</script>
+<style>
+/* ── Base ── */
+::selection{background:#FF6B00;color:white}
+.no-scrollbar::-webkit-scrollbar{display:none}
+.no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+
+/* ── Animations ── */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.animate-fadeInUp{animation:fadeInUp .6s ease-out forwards}
+.animate-fadeIn{animation:fadeIn .4s ease-out forwards}
+.animate-slideDown{animation:slideDown .35s ease-out forwards}
+.animate-float{animation:float 3s ease-in-out infinite}
+.delay-100{animation-delay:.1s}.delay-200{animation-delay:.2s}.delay-300{animation-delay:.3s}.delay-400{animation-delay:.4s}
+
+/* ── Pages ── */
+.page-section{display:none;opacity:0}
+.page-section.active{display:block;animation:fadeIn .35s ease-out forwards}
+
+/* ── Toast ── */
+.toast-container{position:fixed;top:80px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{padding:12px 18px;border-radius:12px;color:white;font-size:14px;font-weight:500;animation:slideDown .35s ease-out forwards;display:flex;align-items:center;gap:10px;max-width:340px;box-shadow:0 8px 32px rgba(0,0,0,.2);pointer-events:all}
+.toast-success{background:linear-gradient(135deg,#138808,#22C55E)}
+.toast-error{background:linear-gradient(135deg,#DC2626,#EF4444)}
+.toast-info{background:linear-gradient(135deg,#EA580C,#FF6B00)}
+
+/* ── Cards ── */
+.vehicle-card:hover .vehicle-img{transform:scale(1.07)}
+.vehicle-img{transition:transform .5s ease}
+
+/* ── Modal ── */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
+.modal-backdrop.hidden{display:none}
+.modal-box{background:white;border-radius:20px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;animation:slideUp .3s ease-out forwards;position:relative}
+.modal-box-lg{max-width:860px}
+
+/* ── Inputs ── */
+input:focus,select:focus,textarea:focus{outline:none;box-shadow:0 0 0 3px rgba(255,107,0,.18);border-color:#FF6B00}
+.inp{width:100%;padding:10px 14px;background:#FAFAF9;border:1.5px solid #E7E5E4;border-radius:10px;font-size:14px;transition:border-color .2s,box-shadow .2s}
+
+/* ── Indian pattern ── */
+.indian-pattern{background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23FF6B00' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+
+/* ── Tricolor ── */
+.tricolor-top{background:linear-gradient(to right,#FF6B00 33.33%,#fff 33.33%,#fff 66.66%,#138808 66.66%);height:4px}
+
+/* ── Status badges ── */
+.badge-pending{background:#FEF9C3;color:#854D0E}
+.badge-confirmed{background:#DCFCE7;color:#166534}
+.badge-completed{background:#DBEAFE;color:#1E40AF}
+.badge-cancelled{background:#FEE2E2;color:#991B1B}
+
+/* ── Spinner ── */
+.spinner{width:20px;height:20px;border:2.5px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+
+/* ── Admin tabs ── */
+.admin-tab{padding:8px 20px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;border:none;background:transparent;color:#78716C;transition:all .2s}
+.admin-tab.active{background:#FF6B00;color:white}
+</style>
+</head>
+<body class="font-sans bg-white text-surface-900 antialiased">
+
+<!-- ══ Supabase Config — paste your URL here, publishable key only ══ -->
+<script>
+  // IMPORTANT: Only publishable key here. Secret key stays in server .env only.
+  const SUPA_URL = 'https://your-project-ref.supabase.co'; // ← PASTE YOUR SUPABASE URL
+  const SUPA_KEY = 'sb_publishable_UA3w4tMOoLW0C71Sov4dPQ_DLKns6wX'; // publishable key — safe for frontend
+  const ADMIN_EMAIL = 'as8557148@gmail.com';
+</script>
+
+<!-- Tricolor top strip -->
+<div class="tricolor-top fixed top-0 left-0 right-0 z-[60]"></div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ══════════════════ NAVBAR ══════════════════ -->
+<nav class="fixed top-1 left-0 right-0 z-50">
+  <div class="max-w-7xl mx-auto px-3 sm:px-6">
+    <div class="mt-3 bg-white/90 backdrop-blur-xl rounded-2xl shadow-lg border border-surface-200/60 px-4 sm:px-6 py-3 flex items-center justify-between">
+      <a href="#" onclick="navigateTo('home')" class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-saffron-500 to-saffron-600 flex items-center justify-center shadow-md">
+          <i data-lucide="bike" class="w-5 h-5 text-white"></i>
+        </div>
+        <span class="text-lg font-bold tracking-tight">Ride<span class="text-saffron-500">India</span></span>
+      </a>
+      <div class="hidden md:flex items-center gap-1">
+        <a href="#" onclick="navigateTo('home')" class="px-4 py-2 rounded-xl text-sm font-medium text-surface-600 hover:text-saffron-600 hover:bg-saffron-50 transition-all">Home</a>
+        <a href="#" onclick="navigateTo('vehicles')" class="px-4 py-2 rounded-xl text-sm font-medium text-surface-600 hover:text-saffron-600 hover:bg-saffron-50 transition-all">Vehicles</a>
+        <a href="#" onclick="navigateTo('rules')" class="px-4 py-2 rounded-xl text-sm font-medium text-surface-600 hover:text-saffron-600 hover:bg-saffron-50 transition-all">Policies</a>
+        <a href="#" onclick="navigateTo('contact')" class="px-4 py-2 rounded-xl text-sm font-medium text-surface-600 hover:text-saffron-600 hover:bg-saffron-50 transition-all">Contact</a>
+      </div>
+      <div class="flex items-center gap-2">
+        <div id="authButtons" class="flex items-center gap-2">
+          <a href="#" onclick="navigateTo('login')" class="hidden sm:inline-flex px-4 py-2 text-sm font-medium text-surface-600 hover:text-saffron-600 transition-colors">Login</a>
+          <a href="#" onclick="navigateTo('signup')" class="px-4 py-2.5 bg-gradient-to-r from-saffron-500 to-saffron-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all">Sign Up</a>
+        </div>
+        <div id="userMenu" class="hidden items-center gap-2">
+          <span id="navUserName" class="hidden sm:inline text-sm font-medium text-surface-700"></span>
+          <a href="#" onclick="navigateTo('dashboard')" class="px-3 py-2 text-sm font-medium text-surface-600 hover:text-saffron-600 transition-colors">Dashboard</a>
+          <button onclick="handleLogout()" class="px-4 py-2 bg-surface-100 text-surface-700 text-sm font-semibold rounded-xl hover:bg-surface-200 transition-all">Logout</button>
+        </div>
+        <a href="#" onclick="navigateTo('admin-login')" class="hidden sm:inline-flex px-3 py-2 text-xs font-medium text-surface-400 hover:text-saffron-500 transition-colors" title="Admin">
+          <i data-lucide="shield" class="w-4 h-4"></i>
+        </a>
+        <button onclick="toggleMobileMenu()" class="md:hidden p-2 rounded-xl hover:bg-surface-100 transition-colors">
+          <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+  <div id="mobileMenu" class="hidden md:hidden mx-3 mt-2 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-surface-200/60 overflow-hidden animate-slideDown">
+    <div class="p-4 space-y-1">
+      <a href="#" onclick="navigateTo('home');closeMobileMenu()" class="block px-4 py-3 rounded-xl text-sm font-medium text-surface-600 hover:text-saffron-600 hover:bg-saffron-50 transition-all">Home</a>
+      <a href="#" onclick="navigateTo('vehicles');closeMobileMenu()" class="block px-4 py-3 rounded-xl text-sm font-medium text-surface-600 hover:text-saffron-600 hover:bg-saffron-50 transition-all">Vehicles</a>
+      <a href="#" onclick="navigateTo('rules');closeMobileMenu()" class="block px-4 py-3 rounded-xl text-sm font-medium text-surface-600 hover:text-saffron-600 hover:bg-saffron-50 transition-all">Policies</a>
+      <a href="#" onclick="navigateTo('contact');closeMobileMenu()" class="block px-4 py-3 rounded-xl text-sm font-medium text-surface-600 hover:text-saffron-600 hover:bg-saffron-50 transition-all">Contact</a>
+      <a href="#" onclick="navigateTo('dashboard');closeMobileMenu()" id="mobileDbLink" class="hidden block px-4 py-3 rounded-xl text-sm font-medium text-surface-600 hover:text-saffron-600 hover:bg-saffron-50 transition-all">Dashboard</a>
+      <a href="#" onclick="navigateTo('admin-login');closeMobileMenu()" class="block px-4 py-3 rounded-xl text-sm font-medium text-surface-400 hover:text-saffron-500 hover:bg-saffron-50 transition-all">Admin</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════════ MODALS ══════════════════ -->
+
+<!-- Vehicle Detail Modal -->
+<div id="vehicleModal" class="modal-backdrop hidden" onclick="closeVehicleModal(event)">
+  <div class="modal-box modal-box-lg" onclick="event.stopPropagation()">
+    <button onclick="closeVehicleModal()" class="absolute top-4 right-4 z-10 w-9 h-9 bg-white/90 backdrop-blur shadow rounded-full flex items-center justify-center hover:bg-surface-100 transition-colors">
+      <i data-lucide="x" class="w-4 h-4"></i>
+    </button>
+    <div id="vehicleModalContent"></div>
+  </div>
+</div>
+
+<!-- Booking Modal -->
+<div id="bookingModal" class="modal-backdrop hidden" onclick="closeBookingModal(event)">
+  <div class="modal-box modal-box-lg" onclick="event.stopPropagation()">
+    <button onclick="closeBookingModal()" class="absolute top-4 right-4 z-10 w-9 h-9 bg-white/90 backdrop-blur shadow rounded-full flex items-center justify-center hover:bg-surface-100 transition-colors">
+      <i data-lucide="x" class="w-4 h-4"></i>
+    </button>
+    <div id="bookingModalContent"></div>
+  </div>
+</div>
+
+<!-- Booking Confirmation Modal -->
+<div id="confirmModal" class="modal-backdrop hidden" onclick="document.getElementById('confirmModal').classList.add('hidden')">
+  <div class="modal-box max-w-md" onclick="event.stopPropagation()">
+    <div id="confirmModalContent"></div>
+  </div>
+</div>
+
+<!-- Admin Vehicle Form Modal -->
+<div id="adminVehicleModal" class="modal-backdrop hidden" onclick="closeAdminVehicleModal(event)">
+  <div class="modal-box modal-box-lg" onclick="event.stopPropagation()">
+    <button onclick="closeAdminVehicleModal()" class="absolute top-4 right-4 z-10 w-9 h-9 bg-white/90 backdrop-blur shadow rounded-full flex items-center justify-center hover:bg-surface-100 transition-colors">
+      <i data-lucide="x" class="w-4 h-4"></i>
+    </button>
+    <div id="adminVehicleFormContent"></div>
+  </div>
+</div>
+
+<!-- ══════════════════ HOME PAGE ══════════════════ -->
+<section id="page-home" class="page-section active">
+  <!-- Hero -->
+  <div class="relative min-h-screen flex items-center overflow-hidden bg-surface-900">
+    <div class="absolute inset-0">
+      <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80" loading="lazy" class="w-full h-full object-cover opacity-25" alt="Indian road">
+      <div class="absolute inset-0 bg-gradient-to-r from-surface-900 via-surface-900/75 to-transparent"></div>
+      <div class="absolute inset-0 bg-gradient-to-t from-surface-900 via-transparent to-surface-900/40"></div>
+    </div>
+    <div class="absolute top-32 right-16 w-64 h-64 bg-saffron-500/10 rounded-full blur-3xl animate-float"></div>
+    <div class="absolute bottom-32 left-16 w-80 h-80 bg-igreen-600/10 rounded-full blur-3xl animate-float" style="animation-delay:1.5s"></div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 relative z-10 pt-32 pb-20">
+      <div class="max-w-2xl">
+        <div class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/10 mb-8 animate-fadeInUp">
+          <span class="w-2 h-2 bg-igreen-400 rounded-full" style="animation:pulse-dot 2s infinite"></span>
+          <span class="text-xs font-medium text-surface-300 tracking-wide uppercase">Serving 50+ Cities Across India</span>
+        </div>
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-[1.05] tracking-tight animate-fadeInUp delay-100">
+          Affordable Bike & Scooty <span class="text-transparent bg-clip-text bg-gradient-to-r from-saffron-400 to-saffron-500">Rentals</span> Near You
+        </h1>
+        <p class="mt-6 text-lg text-surface-400 font-light leading-relaxed max-w-lg animate-fadeInUp delay-200">
+          From daily commute to weekend rides — rent top-quality bikes & scooties at the best prices. Starting at just ₹75/hour.
+        </p>
+        <div class="mt-10 flex flex-wrap gap-4 animate-fadeInUp delay-300">
+          <button onclick="navigateTo('vehicles')" class="group px-8 py-4 bg-gradient-to-r from-saffron-500 to-saffron-600 text-white font-semibold rounded-2xl hover:shadow-2xl hover:shadow-saffron-500/30 hover:-translate-y-1 transition-all flex items-center gap-2">
+            Browse Vehicles <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+          </button>
+          <button onclick="navigateTo('rules')" class="px-8 py-4 bg-white/10 backdrop-blur-md text-white font-medium rounded-2xl border border-white/20 hover:bg-white/20 transition-all">View Policies</button>
+        </div>
+        <div class="mt-12 flex flex-wrap gap-3 animate-fadeInUp delay-400">
+          <div class="px-5 py-3 bg-white/5 backdrop-blur-md rounded-xl border border-white/10"><span class="text-saffron-400 font-bold text-xl">₹75</span><span class="text-surface-400 text-sm ml-1">/hour</span></div>
+          <div class="px-5 py-3 bg-white/5 backdrop-blur-md rounded-xl border border-white/10"><span class="text-saffron-400 font-bold text-xl">₹450</span><span class="text-surface-400 text-sm ml-1">/day</span></div>
+          <div class="px-5 py-3 bg-white/5 backdrop-blur-md rounded-xl border border-white/10"><span class="text-igreen-400 font-bold text-xl">Free</span><span class="text-surface-400 text-sm ml-1">helmet</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="bg-white border-b border-surface-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div class="text-center"><div class="text-2xl sm:text-3xl font-bold">500+</div><div class="text-sm text-surface-500 mt-1">Vehicles</div></div>
+        <div class="text-center"><div class="text-2xl sm:text-3xl font-bold">50+</div><div class="text-sm text-surface-500 mt-1">Cities</div></div>
+        <div class="text-center"><div class="text-2xl sm:text-3xl font-bold">1L+</div><div class="text-sm text-surface-500 mt-1">Happy Riders</div></div>
+        <div class="text-center"><div class="text-2xl sm:text-3xl font-bold text-saffron-500">4.8★</div><div class="text-sm text-surface-500 mt-1">Rating</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <div class="py-20 bg-surface-50 indian-pattern">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="text-center mb-14">
+        <span class="text-xs font-semibold tracking-widest uppercase text-saffron-500">Simple Process</span>
+        <h2 class="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">How It Works</h2>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white rounded-2xl p-6 border border-surface-200 hover:shadow-xl hover:-translate-y-1 transition-all">
+          <div class="w-12 h-12 rounded-2xl bg-saffron-50 flex items-center justify-center mb-4"><span class="text-saffron-600 font-bold text-lg">1</span></div>
+          <h3 class="font-semibold text-lg">Choose Vehicle</h3>
+          <p class="text-surface-500 text-sm mt-2">Browse our wide range of bikes & scooties</p>
+        </div>
+        <div class="bg-white rounded-2xl p-6 border border-surface-200 hover:shadow-xl hover:-translate-y-1 transition-all">
+          <div class="w-12 h-12 rounded-2xl bg-saffron-50 flex items-center justify-center mb-4"><span class="text-saffron-600 font-bold text-lg">2</span></div>
+          <h3 class="font-semibold text-lg">Upload License</h3>
+          <p class="text-surface-500 text-sm mt-2">Submit your valid driving license</p>
+        </div>
+        <div class="bg-white rounded-2xl p-6 border border-surface-200 hover:shadow-xl hover:-translate-y-1 transition-all">
+          <div class="w-12 h-12 rounded-2xl bg-saffron-50 flex items-center justify-center mb-4"><span class="text-saffron-600 font-bold text-lg">3</span></div>
+          <h3 class="font-semibold text-lg">Pay Advance</h3>
+          <p class="text-surface-500 text-sm mt-2">Make advance payment to confirm booking</p>
+        </div>
+        <div class="bg-white rounded-2xl p-6 border border-surface-200 hover:shadow-xl hover:-translate-y-1 transition-all">
+          <div class="w-12 h-12 rounded-2xl bg-igreen-50 flex items-center justify-center mb-4"><i data-lucide="check" class="w-6 h-6 text-igreen-600"></i></div>
+          <h3 class="font-semibold text-lg">Start Riding!</h3>
+          <p class="text-surface-500 text-sm mt-2">Pick up your vehicle and enjoy the ride</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Featured Vehicles -->
+  <div class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-12">
+        <div>
+          <span class="text-xs font-semibold tracking-widest uppercase text-saffron-500">Top Picks</span>
+          <h2 class="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">Featured Vehicles</h2>
+        </div>
+        <a href="#" onclick="navigateTo('vehicles')" class="mt-4 sm:mt-0 text-saffron-600 font-medium text-sm flex items-center gap-1 hover:gap-2 transition-all">
+          View All <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </a>
+      </div>
+      <div id="featuredVehicles" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </div>
+  </div>
+
+  <!-- Why us -->
+  <div class="py-20 bg-surface-900 relative overflow-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+      <div class="text-center mb-14">
+        <span class="text-xs font-semibold tracking-widest uppercase text-saffron-400">Why RideIndia</span>
+        <h2 class="mt-3 text-3xl sm:text-4xl font-bold text-white">Trusted by 1 Lakh+ Riders</h2>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"><div class="w-11 h-11 rounded-xl bg-saffron-500/20 flex items-center justify-center mb-4"><i data-lucide="shield-check" class="w-5 h-5 text-saffron-400"></i></div><h3 class="font-semibold text-white">Fully Insured</h3><p class="text-surface-400 text-sm mt-2">All vehicles comprehensively insured</p></div>
+        <div class="p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"><div class="w-11 h-11 rounded-xl bg-igreen-500/20 flex items-center justify-center mb-4"><i data-lucide="indian-rupee" class="w-5 h-5 text-igreen-400"></i></div><h3 class="font-semibold text-white">Best Prices</h3><p class="text-surface-400 text-sm mt-2">Guaranteed lowest prices, no hidden charges</p></div>
+        <div class="p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"><div class="w-11 h-11 rounded-xl bg-saffron-500/20 flex items-center justify-center mb-4"><i data-lucide="headphones" class="w-5 h-5 text-saffron-400"></i></div><h3 class="font-semibold text-white">24/7 Support</h3><p class="text-surface-400 text-sm mt-2">Roadside assistance anytime</p></div>
+        <div class="p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"><div class="w-11 h-11 rounded-xl bg-igreen-500/20 flex items-center justify-center mb-4"><i data-lucide="map-pin" class="w-5 h-5 text-igreen-400"></i></div><h3 class="font-semibold text-white">Doorstep Delivery</h3><p class="text-surface-400 text-sm mt-2">Vehicle delivered to your doorstep</p></div>
+        <div class="p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"><div class="w-11 h-11 rounded-xl bg-saffron-500/20 flex items-center justify-center mb-4"><i data-lucide="wrench" class="w-5 h-5 text-saffron-400"></i></div><h3 class="font-semibold text-white">Well Maintained</h3><p class="text-surface-400 text-sm mt-2">Regularly serviced, top condition</p></div>
+        <div class="p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"><div class="w-11 h-11 rounded-xl bg-igreen-500/20 flex items-center justify-center mb-4"><i data-lucide="credit-card" class="w-5 h-5 text-igreen-400"></i></div><h3 class="font-semibold text-white">Easy Payments</h3><p class="text-surface-400 text-sm mt-2">UPI, Cards, Net Banking</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="py-20 bg-gradient-to-br from-saffron-500 to-saffron-700 relative overflow-hidden">
+    <div class="absolute inset-0 indian-pattern opacity-20"></div>
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 text-center relative z-10">
+      <h2 class="text-3xl sm:text-5xl font-bold text-white tracking-tight">Ready to Ride?</h2>
+      <p class="mt-4 text-white/80 text-lg max-w-lg mx-auto">Join thousands of riders who trust RideIndia.</p>
+      <button onclick="navigateTo('signup')" class="mt-8 px-10 py-4 bg-white text-saffron-600 font-bold rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all text-lg">Start Riding Today →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ VEHICLES PAGE ══════════════════ -->
+<section id="page-vehicles" class="page-section">
+  <div class="pt-28 pb-20 bg-surface-50 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="text-center mb-10">
+        <span class="text-xs font-semibold tracking-widest uppercase text-saffron-500">Our Fleet</span>
+        <h1 class="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">All Vehicles</h1>
+        <p class="mt-3 text-surface-500">Choose from our well-maintained bikes & scooties</p>
+      </div>
+      <!-- Filters -->
+      <div class="bg-white rounded-2xl p-4 sm:p-5 border border-surface-200 shadow-sm mb-8">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="relative">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none"></i>
+            <input type="text" id="searchInput" placeholder="Search vehicles..." class="inp pl-10" oninput="filterVehicles()">
+          </div>
+          <select id="typeFilter" class="inp" onchange="filterVehicles()">
+            <option value="all">All Types</option>
+            <option value="scooty">Scooty</option>
+            <option value="bike">Bike</option>
+            <option value="premium">Premium Bike</option>
+            <option value="electric">Electric</option>
+          </select>
+          <select id="priceFilter" class="inp" onchange="filterVehicles()">
+            <option value="all">All Prices</option>
+            <option value="low">Under ₹100/hr</option>
+            <option value="mid">₹100–₹200/hr</option>
+            <option value="high">Above ₹200/hr</option>
+          </select>
+        </div>
+      </div>
+      <div id="vehiclesLoading" class="text-center py-16 text-surface-400">
+        <div class="spinner border-saffron-500 border-t-transparent mx-auto mb-3" style="width:32px;height:32px;border-width:3px;border-color:#E7E5E4;border-top-color:#FF6B00"></div>
+        Loading vehicles...
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5" id="allVehicles"></div>
+      <div id="noResults" class="hidden text-center py-20">
+        <i data-lucide="search-x" class="w-14 h-14 text-surface-300 mx-auto mb-4"></i>
+        <p class="text-surface-500 text-lg">No vehicles found</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ LOGIN PAGE ══════════════════ -->
+<section id="page-login" class="page-section">
+  <div class="min-h-screen flex items-center justify-center bg-surface-50 px-4 py-24">
+    <div class="w-full max-w-md">
+      <div class="text-center mb-8">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-saffron-500 to-saffron-600 flex items-center justify-center mx-auto mb-4 shadow-lg"><i data-lucide="bike" class="w-7 h-7 text-white"></i></div>
+        <h1 class="text-2xl font-bold">Welcome Back</h1>
+        <p class="text-surface-500 mt-1">Login to your RideIndia account</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 sm:p-8 border border-surface-200 shadow-sm">
+        <form onsubmit="handleLogin(event)" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-surface-700 mb-1.5">Email or Phone</label>
+            <input type="text" id="loginEmail" placeholder="you@email.com or 9876543210" required class="inp">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-surface-700 mb-1.5">Password</label>
+            <div class="relative">
+              <input type="password" id="loginPassword" placeholder="Enter your password" required class="inp pr-10">
+              <button type="button" onclick="togglePwd('loginPassword',this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400"><i data-lucide="eye" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+          <button type="submit" id="loginBtn" class="w-full py-3.5 bg-gradient-to-r from-saffron-500 to-saffron-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all">Login</button>
+        </form>
+        <p class="mt-6 text-center text-sm text-surface-500">Don't have an account? <a href="#" onclick="navigateTo('signup')" class="text-saffron-600 font-medium hover:underline">Sign Up</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ SIGNUP PAGE ══════════════════ -->
+<section id="page-signup" class="page-section">
+  <div class="min-h-screen flex items-center justify-center bg-surface-50 px-4 py-24">
+    <div class="w-full max-w-md">
+      <div class="text-center mb-8">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-saffron-500 to-saffron-600 flex items-center justify-center mx-auto mb-4 shadow-lg"><i data-lucide="user-plus" class="w-7 h-7 text-white"></i></div>
+        <h1 class="text-2xl font-bold">Create Account</h1>
+        <p class="text-surface-500 mt-1">Join RideIndia and start riding</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 sm:p-8 border border-surface-200 shadow-sm">
+        <form onsubmit="handleSignup(event)" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-surface-700 mb-1.5">Full Name</label>
+            <input type="text" id="signupName" placeholder="e.g., Rahul Sharma" required class="inp">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-surface-700 mb-1.5">Phone Number</label>
+            <div class="flex">
+              <span class="inline-flex items-center px-3 bg-surface-100 border border-r-0 border-surface-200 rounded-l-xl text-sm text-surface-600 font-medium">+91</span>
+              <input type="tel" id="signupPhone" placeholder="9876543210" required pattern="[6-9][0-9]{9}" maxlength="10" class="inp rounded-l-none border-l-0">
+            </div>
+            <p id="phoneError" class="text-xs text-red-500 mt-1 hidden">Enter a valid 10-digit Indian phone number</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-surface-700 mb-1.5">Email</label>
+            <input type="email" id="signupEmail" placeholder="you@email.com" required class="inp">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-surface-700 mb-1.5">Password</label>
+            <div class="relative">
+              <input type="password" id="signupPassword" placeholder="Min 6 characters" required minlength="6" class="inp pr-10">
+              <button type="button" onclick="togglePwd('signupPassword',this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400"><i data-lucide="eye" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+          <label class="flex items-start gap-3 cursor-pointer">
+            <input type="checkbox" required class="mt-1 w-4 h-4 rounded border-surface-300">
+            <span class="text-sm text-surface-600">I agree to the <a href="#" onclick="navigateTo('rules')" class="text-saffron-600 font-medium underline">Terms & Conditions</a></span>
+          </label>
+          <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-saffron-500 to-saffron-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all">Create Account</button>
+        </form>
+        <p class="mt-6 text-center text-sm text-surface-500">Already have an account? <a href="#" onclick="navigateTo('login')" class="text-saffron-600 font-medium hover:underline">Login</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ DASHBOARD PAGE ══════════════════ -->
+<section id="page-dashboard" class="page-section">
+  <div class="pt-28 pb-20 bg-surface-50 min-h-screen">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-bold">My Dashboard</h1>
+          <p class="text-surface-500 mt-1">Welcome back, <span id="dashUserName" class="font-semibold text-saffron-600">Rider</span>!</p>
+        </div>
+        <button onclick="navigateTo('vehicles')" class="inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-500 text-white text-sm font-semibold rounded-xl hover:bg-saffron-600 transition-colors">
+          <i data-lucide="plus" class="w-4 h-4"></i> Book a Vehicle
+        </button>
+      </div>
+      <!-- Profile -->
+      <div class="bg-white rounded-2xl p-6 border border-surface-200 mb-6">
+        <h2 class="font-bold text-lg mb-4 flex items-center gap-2"><i data-lucide="user" class="w-5 h-5 text-saffron-500"></i> Profile</h2>
+        <div class="grid sm:grid-cols-2 gap-3 text-sm">
+          <div class="flex gap-2"><span class="text-surface-500 min-w-[80px]">Name:</span><span id="dashName" class="font-medium">—</span></div>
+          <div class="flex gap-2"><span class="text-surface-500 min-w-[80px]">Email:</span><span id="dashEmail" class="font-medium">—</span></div>
+          <div class="flex gap-2"><span class="text-surface-500 min-w-[80px]">Phone:</span><span id="dashPhone" class="font-medium">—</span></div>
+          <div class="flex gap-2"><span class="text-surface-500 min-w-[80px]">Joined:</span><span id="dashJoined" class="font-medium">—</span></div>
+        </div>
+      </div>
+      <!-- Bookings -->
+      <div class="bg-white rounded-2xl p-6 border border-surface-200">
+        <h2 class="font-bold text-lg mb-5 flex items-center gap-2"><i data-lucide="calendar" class="w-5 h-5 text-saffron-500"></i> My Bookings</h2>
+        <div id="dashBookings">
+          <div class="text-center py-10 text-surface-400">
+            <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 text-surface-300"></i>
+            <p>No bookings yet</p>
+            <a href="#" onclick="navigateTo('vehicles')" class="mt-3 inline-block text-saffron-600 font-medium text-sm hover:underline">Browse vehicles →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ RULES PAGE ══════════════════ -->
+<section id="page-rules" class="page-section">
+  <div class="pt-28 pb-20 bg-surface-50 min-h-screen">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6">
+      <div class="text-center mb-10">
+        <span class="text-xs font-semibold tracking-widest uppercase text-saffron-500">Important</span>
+        <h1 class="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">Rules & Policies</h1>
+        <p class="mt-3 text-surface-500">Please read carefully before booking</p>
+      </div>
+      <div class="space-y-4">
+        <div class="bg-white rounded-2xl p-6 border border-surface-200 shadow-sm"><div class="flex items-start gap-4"><div class="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0"><i data-lucide="id-card" class="w-5 h-5 text-red-600"></i></div><div><h3 class="font-bold text-lg">Valid Driving License Mandatory</h3><p class="text-surface-600 text-sm mt-2 leading-relaxed">Rider MUST have a valid Indian Driving License (two-wheeler). Learner's licenses NOT accepted. Verification done at pickup.</p></div></div></div>
+        <div class="bg-white rounded-2xl p-6 border border-surface-200 shadow-sm"><div class="flex items-start gap-4"><div class="w-10 h-10 rounded-xl bg-saffron-50 flex items-center justify-center flex-shrink-0"><i data-lucide="wallet" class="w-5 h-5 text-saffron-600"></i></div><div><h3 class="font-bold text-lg">Advance Payment Mandatory</h3><p class="text-surface-600 text-sm mt-2">Booking is confirmed only after advance payment. Pay via UPI, Card, or Net Banking.</p></div></div></div>
+        <div class="bg-white rounded-2xl p-6 border border-surface-200 shadow-sm"><div class="flex items-start gap-4"><div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0"><i data-lucide="banknote" class="w-5 h-5 text-blue-600"></i></div><div><h3 class="font-bold text-lg">Security Deposit</h3><p class="text-surface-600 text-sm mt-2">Refundable deposit required. Scooty: ₹500 · Standard Bike: ₹1,000 · Premium Bike: ₹2,000–₹3,000</p></div></div></div>
+        <div class="bg-white rounded-2xl p-6 border border-surface-200 shadow-sm"><div class="flex items-start gap-4"><div class="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0"><i data-lucide="alert-octagon" class="w-5 h-5 text-red-600"></i></div><div><h3 class="font-bold text-lg">Penalty & Damage Charges</h3><ul class="mt-2 space-y-1.5 text-surface-500 text-sm"><li>• Late return: ₹100/hour beyond booked duration</li><li>• Vehicle damage: Repair cost + ₹500 service charge</li><li>• Missing accessories: ₹500–₹2,000</li><li>• Drunk riding: Immediate seizure, no refund, legal action</li><li>• Riding without helmet: ₹1,000 penalty</li></ul></div></div></div>
+        <div class="bg-white rounded-2xl p-6 border border-surface-200 shadow-sm"><div class="flex items-start gap-4"><div class="w-10 h-10 rounded-xl bg-igreen-50 flex items-center justify-center flex-shrink-0"><i data-lucide="check-circle" class="w-5 h-5 text-igreen-600"></i></div><div><h3 class="font-bold text-lg">Cancellation Policy</h3><ul class="mt-2 space-y-1 text-surface-500 text-sm"><li>• 24+ hours before: Full refund minus ₹50 fee</li><li>• 6–24 hours before: 50% refund</li><li>• Less than 6 hours: No refund</li></ul></div></div></div>
+        <div class="bg-white rounded-2xl p-6 border border-surface-200 shadow-sm"><div class="flex items-start gap-4"><div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0"><i data-lucide="users" class="w-5 h-5 text-purple-600"></i></div><div><h3 class="font-bold text-lg">General Rules</h3><ul class="mt-2 space-y-1 text-surface-500 text-sm"><li>• Minimum age: 18 years</li><li>• Helmet compulsory for rider and pillion</li><li>• No racing, stunts, or illegal activity</li><li>• Vehicle cannot be sub-rented</li><li>• Fuel cost borne by rider</li><li>• Return with same fuel level as pickup</li></ul></div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ CONTACT PAGE ══════════════════ -->
+<section id="page-contact" class="page-section">
+  <div class="pt-28 pb-20 bg-surface-50 min-h-screen">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6">
+      <div class="text-center mb-12">
+        <span class="text-xs font-semibold tracking-widest uppercase text-saffron-500">Get In Touch</span>
+        <h1 class="mt-3 text-3xl sm:text-4xl font-bold">Contact Support</h1>
+        <p class="mt-3 text-surface-500">We're here to help you 24/7</p>
+      </div>
+      <div class="grid lg:grid-cols-2 gap-8">
+        <div class="space-y-4">
+          <div class="bg-white rounded-2xl p-6 border border-surface-200 flex items-start gap-4"><div class="w-10 h-10 rounded-xl bg-saffron-50 flex items-center justify-center flex-shrink-0"><i data-lucide="phone" class="w-5 h-5 text-saffron-600"></i></div><div><h3 class="font-semibold">Phone / WhatsApp</h3><p class="text-surface-500 text-sm mt-1">+91 90680 01214</p><p class="text-surface-400 text-xs mt-0.5">Available 24/7</p></div></div>
+          <div class="bg-white rounded-2xl p-6 border border-surface-200 flex items-start gap-4"><div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0"><i data-lucide="mail" class="w-5 h-5 text-blue-600"></i></div><div><h3 class="font-semibold">Email</h3><p class="text-surface-500 text-sm mt-1">as8557148@gmail.com</p><p class="text-surface-400 text-xs mt-0.5">Response within 2 hours</p></div></div>
+          <div class="bg-white rounded-2xl p-6 border border-surface-200 flex items-start gap-4"><div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0"><i data-lucide="map-pin" class="w-5 h-5 text-purple-600"></i></div><div><h3 class="font-semibold">Office</h3><p class="text-surface-500 text-sm mt-1">Connaught Place, New Delhi – 110001</p><p class="text-surface-400 text-xs mt-0.5">Mon–Sat, 9 AM – 8 PM</p></div></div>
+        </div>
+        <div class="bg-white rounded-2xl p-6 sm:p-8 border border-surface-200 shadow-sm">
+          <h2 class="font-bold text-lg mb-5">Send us a Message</h2>
+          <form onsubmit="handleContact(event)" class="space-y-4">
+            <input type="text" name="name" placeholder="Your Name" required class="inp">
+            <input type="email" name="email" placeholder="Your Email" required class="inp">
+            <input type="tel" name="phone" placeholder="Phone Number (Optional)" class="inp">
+            <select name="subject" class="inp">
+              <option value="">Select Subject</option>
+              <option>Booking Issue</option><option>Payment Problem</option><option>Vehicle Complaint</option><option>Refund Query</option><option>Other</option>
+            </select>
+            <textarea name="message" rows="4" placeholder="Your message..." required class="inp resize-none"></textarea>
+            <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-saffron-500 to-saffron-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all">Send Message</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ ADMIN LOGIN PAGE ══════════════════ -->
+<section id="page-admin-login" class="page-section">
+  <div class="min-h-screen flex items-center justify-center bg-surface-900 px-4 py-24">
+    <div class="w-full max-w-md">
+      <div class="text-center mb-8">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-saffron-500 to-saffron-600 flex items-center justify-center mx-auto mb-4 shadow-lg"><i data-lucide="shield" class="w-7 h-7 text-white"></i></div>
+        <h1 class="text-2xl font-bold text-white">Admin Panel</h1>
+        <p class="text-surface-400 mt-1">RideIndia Admin Access</p>
+      </div>
+      <div class="bg-white/5 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-white/10">
+        <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-surface-300 mb-1.5">Admin Email</label>
+            <input type="email" id="adminEmail" placeholder="admin@rideindia.in" required class="inp bg-white/10 border-white/20 text-white placeholder-surface-500" style="color:white">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-surface-300 mb-1.5">Password</label>
+            <div class="relative">
+              <input type="password" id="adminPassword" placeholder="Admin password" required class="inp pr-10 bg-white/10 border-white/20 text-white placeholder-surface-500" style="color:white">
+              <button type="button" onclick="togglePwd('adminPassword',this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400"><i data-lucide="eye" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+          <button type="submit" id="adminLoginBtn" class="w-full py-3.5 bg-gradient-to-r from-saffron-500 to-saffron-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all">Login as Admin</button>
+        </form>
+        <p class="mt-4 text-center text-xs text-surface-500">Admin email: as8557148@gmail.com</p>
+        <div class="mt-4 text-center"><a href="#" onclick="navigateTo('home')" class="text-surface-400 text-sm hover:text-white transition-colors">← Back to site</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ ADMIN PANEL PAGE ══════════════════ -->
+<section id="page-admin" class="page-section">
+  <div class="pt-28 pb-20 bg-surface-50 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <i data-lucide="shield-check" class="w-5 h-5 text-saffron-500"></i>
+            <h1 class="text-2xl sm:text-3xl font-bold">Admin Panel</h1>
+          </div>
+          <p class="text-surface-500 text-sm">Manage vehicles and bookings</p>
+        </div>
+        <button onclick="handleAdminLogout()" class="inline-flex items-center gap-2 px-4 py-2 bg-surface-200 text-surface-700 text-sm font-medium rounded-xl hover:bg-surface-300 transition-colors">
+          <i data-lucide="log-out" class="w-4 h-4"></i> Logout
+        </button>
+      </div>
+      <!-- Tabs -->
+      <div class="flex gap-2 mb-8 bg-white rounded-xl p-1.5 border border-surface-200 w-fit">
+        <button class="admin-tab active" id="tabVehiclesBtn" onclick="switchAdminTab('vehicles')">
+          <i data-lucide="bike" class="w-4 h-4 inline mr-1.5"></i>Vehicles
+        </button>
+        <button class="admin-tab" id="tabBookingsBtn" onclick="switchAdminTab('bookings')">
+          <i data-lucide="calendar" class="w-4 h-4 inline mr-1.5"></i>Bookings
+        </button>
+      </div>
+      <!-- Vehicles Tab -->
+      <div id="adminTabVehicles">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+          <h2 class="font-bold text-xl">All Vehicles</h2>
+          <button onclick="openAdminVehicleForm()" class="inline-flex items-center gap-2 px-5 py-2.5 bg-saffron-500 text-white text-sm font-semibold rounded-xl hover:bg-saffron-600 transition-colors">
+            <i data-lucide="plus" class="w-4 h-4"></i> Add Vehicle
+          </button>
+        </div>
+        <div id="adminVehiclesList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
+      </div>
+      <!-- Bookings Tab -->
+      <div id="adminTabBookings" class="hidden">
+        <div class="flex items-center justify-between mb-5">
+          <h2 class="font-bold text-xl">All Bookings</h2>
+          <button onclick="loadAdminBookings()" class="inline-flex items-center gap-2 px-4 py-2 bg-surface-100 text-surface-700 text-sm font-medium rounded-xl hover:bg-surface-200 transition-colors">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Refresh
+          </button>
+        </div>
+        <div id="adminBookingsList"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ FOOTER ══════════════════ -->
+<footer class="bg-surface-900 text-white">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-14">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-10">
+      <div>
+        <div class="flex items-center gap-2 mb-4"><div class="w-9 h-9 rounded-xl bg-gradient-to-br from-saffron-500 to-saffron-600 flex items-center justify-center"><i data-lucide="bike" class="w-5 h-5 text-white"></i></div><span class="text-lg font-bold">Ride<span class="text-saffron-400">India</span></span></div>
+        <p class="text-surface-400 text-sm leading-relaxed">India's trusted bike & scooty rental platform across 50+ cities.</p>
+      </div>
+      <div><h4 class="font-semibold mb-4">Quick Links</h4><ul class="space-y-2 text-sm text-surface-400"><li><a href="#" onclick="navigateTo('home')" class="hover:text-saffron-400 transition-colors">Home</a></li><li><a href="#" onclick="navigateTo('vehicles')" class="hover:text-saffron-400 transition-colors">Vehicles</a></li><li><a href="#" onclick="navigateTo('rules')" class="hover:text-saffron-400 transition-colors">Policies</a></li><li><a href="#" onclick="navigateTo('contact')" class="hover:text-saffron-400 transition-colors">Contact</a></li></ul></div>
+      <div><h4 class="font-semibold mb-4">Vehicle Types</h4><ul class="space-y-2 text-sm text-surface-400"><li>Scooty Rentals</li><li>Commuter Bikes</li><li>Premium / Cruiser</li><li>Electric Scooters</li></ul></div>
+      <div><h4 class="font-semibold mb-4">Contact</h4><ul class="space-y-2 text-sm text-surface-400"><li>📞 +91 90680 01214</li><li>📧 as8557148@gmail.com</li><li>📍 New Delhi – 110001</li></ul></div>
+    </div>
+    <div class="mt-10 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <p class="text-sm text-surface-500">© 2025 RideIndia. All rights reserved.</p>
+      <div class="tricolor-top w-24 rounded-full"></div>
+    </div>
+  </div>
+</footer>
